@@ -6,6 +6,7 @@ import random
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime
+import subprocess
 
 current_date = datetime.now().strftime("%d/%m/%Y")
 load_dotenv()
@@ -99,6 +100,8 @@ for i in range(random.randint(3, 4)):
     res = requests.put(upload_url, headers=headers, data=content.encode("utf-8"))
     print(f"📎 Upload {filename} → Status:", res.status_code)
 
-# Step 5 - Upload ảnh từ thư mục local
+print("🧹 Xoá toàn bộ nội dung trong thư mục teste5 (giữ nguyên thư mục)...")
+subprocess.run(["rclone", "delete", "onde:teste5"], check=True)
+
 print("🖼️ Upload ảnh từ local thư mục images lên teste5...")
-os.system(r'rclone copy "C:\\Users\\hoang\\Desktop\\rclone\\images" onde:teste5 --transfers=4 --checkers=8 --fast-list --ignore-times')
+subprocess.run(["rclone", "copy", "images", "onde:teste5", "--transfers=4", "--checkers=8", "--fast-list", "--ignore-times"], check=True)
