@@ -67,10 +67,10 @@ headers = {
 def safe_get(url, label):
     try:
         res = requests.get(url, headers=headers)
-        log(f"{label} → Status: {res.status_code}"))
+        log(f"{label} → Status: {res.status_code}")
         return res
     except Exception as e:
-        log(f"{label} → Lỗi:", {e})
+        log(f"{label} → Lỗi: {e}")
 
 # === Kiểm tra thông tin SharePoint ===
 log("🔍 Kiểm tra thông tin SharePoint...")
@@ -131,7 +131,7 @@ def get_random_anhmoe_url():
             if img_tag and img_tag.get("src"):
                 return img_tag["src"]
     except Exception as e:
-        log("❌ Lỗi lấy ảnh từ anh.moe:", {e})
+        log(f"❌ Lỗi lấy ảnh từ anh.moe: {e}")
     return None
 
 log("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
