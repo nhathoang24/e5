@@ -5,13 +5,19 @@ from dotenv import load_dotenv
 from datetime import datetime
 from bs4 import BeautifulSoup
 
+log_messages = []
+
+def log(msg):
+    print(msg)
+    log_messages.append(msg)
+
 # === Hàm gửi Telegram ===
 def send_telegram_message(msg):
     telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
     telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     if not telegram_token or not telegram_chat_id:
-        print("⚠️ Thiếu TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID")
+        log("⚠️ Thiếu TELEGRAM_BOT_TOKEN hoặc TELEGRAM_CHAT_ID")
         return
 
     url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
@@ -22,9 +28,9 @@ def send_telegram_message(msg):
     }
     try:
         res = requests.post(url, data=data)
-        print("📨 Gửi Telegram →", res.status_code)
+        log("📨 Gửi Telegram →", res.status_code)
     except Exception as e:
-        print("❌ Gửi Telegram lỗi:", e)
+        log("❌ Gửi Telegram lỗi:", e)
 
 # === Load biến môi trường ===
 current_date = datetime.now().strftime("%d/%m/%Y")
@@ -37,7 +43,7 @@ sharepoint_site_id = os.getenv("SHAREPOINT_SITE_ID")
 sharepoint_drive_id = os.getenv("SHAREPOINT_DRIVE_ID")
 
 # === Lấy access token ===
-print("🔐 Đang lấy access_token...")
+log("🔐 Đang lấy access_token...")
 token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
 scopes = ["https://graph.microsoft.com/.default"]
 data = {
@@ -50,7 +56,7 @@ resp = requests.post(token_url, data=data)
 token = resp.json().get("access_token")
 if not token:
     send_telegram_message("❌ *Lỗi lấy Access Token!*")
-    print("❌ Lỗi lấy token:", resp.text)
+    log("❌ Lỗi lấy token:", resp.text)
     exit()
 
 headers = {
@@ -61,13 +67,13 @@ headers = {
 def safe_get(url, label):
     try:
         res = requests.get(url, headers=headers)
-        print(f"{label} → Status:", res.status_code)
+        log(f"{label} → Status:", res.status_code)
         return res
     except Exception as e:
-        print(f"{label} → Lỗi:", e)
+        log(f"{label} → Lỗi:", e)
 
 # === Kiểm tra thông tin SharePoint ===
-print("🔍 Kiểm tra thông tin SharePoint...")
+log("🔍 Kiểm tra thông tin SharePoint...")
 site_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}", "📊 Site info")
 drive_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}", "📁 Drive info")
 
@@ -98,7 +104,7 @@ mail_payload = {
   }
 }
 
-print("📬 Gửi mail nội bộ và ngoài hệ thống ...")
+log("📬 Gửi mail nội bộ và ngoài hệ thống ...")
 res = requests.post(
     f"https://graph.microsoft.com/v1.0/users/{user_email}/sendMail",
     headers=headers,
@@ -107,7 +113,7 @@ res = requests.post(
 send_telegram_message(f"📬 Gửi mail → Status: `{res.status_code}`")
 
 # === Ping các API Microsoft để duy trì kết nối ===
-print("🔄 Ping các dịch vụ Microsoft Graph...")
+log("🔄 Ping các dịch vụ Microsoft Graph...")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}", "👤 User info")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/drive", "📁 OneDrive")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders", "📨 MailFolders")
@@ -125,17 +131,17 @@ def get_random_anhmoe_url():
             if img_tag and img_tag.get("src"):
                 return img_tag["src"]
     except Exception as e:
-        print("❌ Lỗi lấy ảnh từ anh.moe:", e)
+        log("❌ Lỗi lấy ảnh từ anh.moe:", e)
     return None
 
-print("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
+log("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
 image_url = get_random_anhmoe_url()
 if not image_url:
-    print("❌ Không lấy được ảnh.")
+    log("❌ Không lấy được ảnh.")
 else:
-    print(f"🔗 URL ảnh: {image_url}")
+    log(f"🔗 URL ảnh: {image_url}")
     image_response = requests.get(image_url)
-    print(f"📥 Tải ảnh → Status: {image_response.status_code}, Size: {len(image_response.content)} bytes")
+    log(f"📥 Tải ảnh → Status: {image_response.status_code}, Size: {len(image_response.content)} bytes")
 
     if image_response.status_code == 200:
         image_data = image_response.content
@@ -151,9 +157,9 @@ else:
             "Content-Type": "image/jpeg"
         }
 
-        print(f"🚀 Upload ảnh lên SharePoint: {filename}")
+        log(f"🚀 Upload ảnh lên SharePoint: {filename}")
         res = requests.put(upload_url, headers=upload_headers, data=image_data)
-        print(f"📤 Upload → Status: {res.status_code}")
+        log(f"📤 Upload → Status: {res.status_code}")
 
         if res.status_code in [200, 201]:
             response_data = res.json()
@@ -166,7 +172,7 @@ else:
                 f"❌ *Upload ảnh lỗi!*\nStatus: `{res.status_code}`\n{res.text}"
             )
     else:
-        print("❌ Không thể tải ảnh từ URL")
+        log("❌ Không thể tải ảnh từ URL")
 
 # === Hoàn tất ===
 send_telegram_message("✅ *Ping E5 hoàn tất!*")
