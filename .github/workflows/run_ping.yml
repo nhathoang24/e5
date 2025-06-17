@@ -3,7 +3,7 @@ name: Ping E5 Application
 
 on:
   schedule:
-    # Chạy mỗi 6 giờ (có thể điều chỉnh theo nhu cầu)
+    # Chạy mỗi 2 ngày (có thể điều chỉnh theo nhu cầu)
     - cron: '0 13 */2 * *'
   workflow_dispatch: # Cho phép chạy thủ công
 
