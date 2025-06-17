@@ -4,46 +4,74 @@ name: Ping E5 Application
 on:
   schedule:
     # Chạy mỗi 2 ngày (có thể điều chỉnh theo nhu cầu)
-    - cron: '0 13 */2 * *'
+    - cron: "0 13 */2 * *"
   workflow_dispatch: # Cho phép chạy thủ công
 
 jobs:
   ping-e5:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests python-dotenv beautifulsoup4
-        
-    - name: Create .env file from secrets
-      run: |
-        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> .env
-        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> .env
-        echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> .env
-        echo "USER_EMAIL=${{ secrets.USER_EMAIL }}" >> .env
-        echo "SHAREPOINT_SITE_ID=${{ secrets.SHAREPOINT_SITE_ID }}" >> .env
-        echo "SHAREPOINT_DRIVE_ID=${{ secrets.SHAREPOINT_DRIVE_ID }}" >> .env
-        echo "TELEGRAM_BOT_TOKEN= ${{ secrets.TELEGRAM_BOT_TOKEN }}" >>.env
-        echo "TELEGRAM_CHAT_ID= ${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
-        
-    - name: Run PingE5 Application
-      run: python PingE5_App.py
-      
-    - name: Upload logs (nếu có lỗi)
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: error-logs
-        path: |
-          *.log
-          error.txt
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests python-dotenv beautifulsoup4
+
+      - name: Create .env file from secrets
+        run: |
+          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> .env
+          echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> .env
+          echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> .env
+          echo "USER_EMAIL=${{ secrets.USER_EMAIL }}" >> .env
+          echo "SHAREPOINT_SITE_ID=${{ secrets.SHAREPOINT_SITE_ID }}" >> .env
+          echo "SHAREPOINT_DRIVE_ID=${{ secrets.SHAREPOINT_DRIVE_ID }}" >> .env
+          echo "TELEGRAM_BOT_TOKEN= ${{ secrets.TELEGRAM_BOT_TOKEN }}" >>.env
+          echo "TELEGRAM_CHAT_ID= ${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
+
+      - name: Run PingE5 Application
+        run: python PingE5_App.py
+
+      - name: Upload logs (nếu có lỗi)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-logs
+          path: |
+            *.log
+            error.txt
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: ping-e5
+    if: always()
+    steps:
+      - name: Delete old workflow runs (giữ lại 2 cái mới nhất)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "ping-e5.yml",
+              per_page: 100
+            });
+
+            const oldRuns = runs.data.workflow_runs.slice(2); // Giữ lại 2 run mới nhất
+
+            for (const run of oldRuns) {
+              if (run.status === "completed") {
+                console.log(`🗑️ Deleting run ${run.id}`);
+                await github.rest.actions.deleteWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id
+                });
+              }
+            }
