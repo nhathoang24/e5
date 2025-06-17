@@ -33,4 +33,4 @@ jobs:
           rclone_config: ${{ secrets.RCLONE_CONF }}
 
       - name: 🚀 Run script
-        run: python main.py
+        run: python PingE5_App.py
