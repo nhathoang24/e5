@@ -1,10 +1,12 @@
 import requests
 import os
 import random
+import time
 from dotenv import load_dotenv
 from datetime import datetime
 from bs4 import BeautifulSoup
 
+# === Khởi tạo log lưu trữ ===
 log_messages = []
 
 def log(msg):
@@ -30,11 +32,11 @@ def send_telegram_message(msg):
         res = requests.post(url, data=data)
         log(f"📨 Gửi Telegram → {res.status_code}")
     except Exception as e:
-        log("❌ Gửi Telegram lỗi:", e)
+        log(f"❌ Gửi Telegram lỗi: {e}")
 
 # === Load biến môi trường ===
-current_date = datetime.now().strftime("%d/%m/%Y")
 load_dotenv()
+current_date = datetime.now().strftime("%d/%m/%Y")
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
 tenant_id = os.getenv("TENANT_ID")
@@ -64,6 +66,7 @@ headers = {
     "Content-Type": "application/json"
 }
 
+# === Hàm GET an toàn ===
 def safe_get(url, label):
     try:
         res = requests.get(url, headers=headers)
@@ -79,8 +82,10 @@ drive_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_
 
 # === Gửi mail ===
 recipients = [
-    "phongse@h151147f.onmicrosoft.com", "phongsg@h151147f.onmicrosoft.com",
-    "Fongsg@h151147f.onmicrosoft.com", "hd3906420@gmail.com",
+    "phongse@h151147f.onmicrosoft.com",
+    "phongsg@h151147f.onmicrosoft.com",
+    "Fongsg@h151147f.onmicrosoft.com",
+    "hd3906420@gmail.com",
 ]
 
 mail_payload = {
@@ -121,7 +126,7 @@ safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/joinedTeams", "💬 Teams")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/calendars", "📅 Calendar list")
 
-# === Upload ảnh ngẫu nhiên từ anh.moe ===
+# === Hàm lấy URL ảnh ngẫu nhiên ===
 def get_random_anhmoe_url():
     try:
         res = requests.get("https://anh.moe/?random", timeout=10)
@@ -134,6 +139,7 @@ def get_random_anhmoe_url():
         log(f"❌ Lỗi lấy ảnh từ anh.moe: {e}")
     return None
 
+# === Upload ảnh ===
 log("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
 image_url = get_random_anhmoe_url()
 if not image_url:
@@ -178,21 +184,14 @@ else:
 send_telegram_message("✅ *Ping E5 hoàn tất!*")
 log("✅ Hoàn thành ping E5!")
 
-# === Gửi log về Telegram ===
-import time
-
-bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-chat_id = os.getenv("TELEGRAM_CHAT_ID")
-
+# === Gửi toàn bộ log về Telegram ===
 log_text = "\n".join(log_messages)
 max_length = 4000  # Telegram giới hạn 4096 ký tự
-
-# Nếu log quá dài thì chia nhỏ
 for i in range(0, len(log_text), max_length):
     chunk = log_text[i:i + max_length]
     res = requests.post(
-        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-        data={"chat_id": chat_id, "text": chunk}
+        f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage",
+        data={"chat_id": os.getenv('TELEGRAM_CHAT_ID'), "text": chunk}
     )
     log(f"📨 Gửi Telegram → {res.status_code}")
     time.sleep(2)  # tránh spam
