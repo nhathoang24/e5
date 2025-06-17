@@ -1,0 +1,36 @@
+name: Auto Send Mail and Update OneDrive
+
+on:
+  workflow_dispatch:  # hoặc dùng `schedule` để định kỳ chạy
+    # schedule:
+    #   - cron: '0 8 * * *'  # chạy mỗi 8h sáng UTC
+
+jobs:
+  send-mail:
+    runs-on: ubuntu-latest
+
+    env:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      USER_EMAIL: ${{ secrets.USER_EMAIL }}
+
+    steps:
+      - name: 🔄 Checkout source
+        uses: actions/checkout@v3
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: ⚙️ Setup Rclone
+        uses: animenosekai/setup-rclone@v1.0.0
+        with:
+          rclone_config: ${{ secrets.RCLONE_CONF }}
+
+      - name: 🚀 Run script
+        run: python main.py
