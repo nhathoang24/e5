@@ -117,7 +117,6 @@ res = requests.post(
     headers=headers,
     json=mail_payload
 )
-send_telegram_message(f"📬 Gửi mail → Status: `{res.status_code}`")
 
 # === Ping các API Microsoft để duy trì kết nối ===
 log("🔄 Ping các dịch vụ Microsoft Graph...")
@@ -172,18 +171,12 @@ else:
         if res.status_code in [200, 201]:
             response_data = res.json()
             file_url = response_data.get("webUrl", "N/A")
-            send_telegram_message(
-                f"🖼️ *Upload ảnh thành công!*\n📁 `{response_data.get('name')}`\n🔗 [Xem ảnh]({file_url})"
-            )
         else:
-            send_telegram_message(
-                f"❌ *Upload ảnh lỗi!*\nStatus: `{res.status_code}`\n{res.text}"
-            )
+            log(f"❌ *Upload ảnh lỗi!*\nStatus: `{res.status_code}`\n{res.text}")
     else:
         log("❌ Không thể tải ảnh từ URL")
 
 # === Hoàn tất ===
-send_telegram_message("✅ *Ping E5 hoàn tất!*")
 log("✅ Hoàn thành ping E5!")
 
 # === Gửi toàn bộ log về Telegram ===
