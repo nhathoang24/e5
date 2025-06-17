@@ -72,10 +72,10 @@ headers = {
 def safe_get(url, label):
     try:
         res = requests.get(url, headers=headers)
-        log(f"{label} → Status: {res.status_code}")
+        log(f"{label} → Status:", res.status_code)
         return res
     except Exception as e:
-        log(f"{label} → Lỗi: {e}")
+        log(f"{label} → Lỗi:", e)
 
 # === Kiểm tra thông tin SharePoint ===
 log("🔍 Kiểm tra thông tin SharePoint...")
