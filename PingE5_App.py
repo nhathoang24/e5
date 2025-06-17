@@ -47,6 +47,44 @@ def safe_get(url, label):
     except Exception as e:
         print(f"{label} → Lỗi:", e)
 
+# === Kiểm tra thông tin SharePoint trước khi upload ===
+print("🔍 Kiểm tra thông tin SharePoint...")
+site_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}", "📊 Site info")
+if site_info and site_info.status_code == 200:
+    site_data = site_info.json()
+    print(f"✅ Site name: {site_data.get('displayName', 'N/A')}")
+    print(f"✅ Site URL: {site_data.get('webUrl', 'N/A')}")
+
+drive_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}", "📁 Drive info")
+if drive_info and drive_info.status_code == 200:
+    drive_data = drive_info.json()
+    print(f"✅ Drive name: {drive_data.get('name', 'N/A')}")
+    print(f"✅ Drive type: {drive_data.get('driveType', 'N/A')}")
+
+# === Kiểm tra thư mục đích ===
+folder_path = "teste5"
+print(f"📂 Kiểm tra thư mục: {folder_path}")
+folder_check = safe_get(
+    f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}/root:/{folder_path}", 
+    "📂 Folder check"
+)
+
+if folder_check and folder_check.status_code == 404:
+    print(f"📁 Thư mục {folder_path} không tồn tại, đang tạo...")
+    create_folder_payload = {
+        "name": folder_path,
+        "folder": {},
+        "@microsoft.graph.conflictBehavior": "rename"
+    }
+    create_folder_res = requests.post(
+        f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}/root/children",
+        headers=headers,
+        json=create_folder_payload
+    )
+    print(f"📁 Tạo thư mục → Status: {create_folder_res.status_code}")
+    if create_folder_res.status_code != 201:
+        print("❌ Lỗi tạo thư mục:", create_folder_res.text)
+
 # === Gửi mail ===
 recipients = [
     "phongse@h151147f.onmicrosoft.com", "phongsg@h151147f.onmicrosoft.com",
@@ -90,7 +128,7 @@ safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/joinedTeams", "💬 Teams")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/calendars", "📅 Calendar list")
 
-# === Upload ảnh ngẫu nhiên lên SharePoint (trực tiếp, không lưu file) ===
+# === Upload ảnh ngẫu nhiên lên SharePoint với debug chi tiết ===
 def get_random_anhmoe_url():
     try:
         res = requests.get("https://anh.moe/?random", timeout=10)
@@ -109,17 +147,66 @@ if not image_url:
     print("❌ Không lấy được ảnh.")
     exit()
 
-image_data = requests.get(image_url).content
-filename = f"random_image_{random.randint(1000, 9999)}.jpg"
-folder_path = "teste5"
+print(f"🔗 URL ảnh: {image_url}")
+image_response = requests.get(image_url)
+print(f"📥 Tải ảnh → Status: {image_response.status_code}, Size: {len(image_response.content)} bytes")
 
+if image_response.status_code != 200:
+    print("❌ Không thể tải ảnh từ URL")
+    exit()
+
+image_data = image_response.content
+filename = f"random_image_{random.randint(1000, 9999)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+
+# === Upload với headers chính xác ===
 upload_url = (
     f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
     f"/root:/{folder_path}/{filename}:/content"
 )
 
-print("🚀 Upload ảnh trực tiếp lên SharePoint...")
-res = requests.put(upload_url, headers=headers, data=BytesIO(image_data))
-print(f"📤 Upload lên SharePoint → Status: {res.status_code}")
-if res.status_code >= 400:
+# Sử dụng headers riêng cho upload (không có Content-Type: application/json)
+upload_headers = {
+    "Authorization": f"Bearer {token}",
+    "Content-Type": "image/jpeg"
+}
+
+print(f"🚀 Upload ảnh lên SharePoint: {filename}")
+print(f"📍 Upload URL: {upload_url}")
+res = requests.put(upload_url, headers=upload_headers, data=image_data)
+print(f"📤 Upload → Status: {res.status_code}")
+
+if res.status_code in [200, 201]:
+    response_data = res.json()
+    print("✅ Upload thành công!")
+    print(f"📁 File ID: {response_data.get('id', 'N/A')}")
+    print(f"📁 File name: {response_data.get('name', 'N/A')}")
+    print(f"📁 Web URL: {response_data.get('webUrl', 'N/A')}")
+    
+    # Kiểm tra file đã được upload
+    time.sleep(2)  # Chờ 2 giây
+    check_file = safe_get(
+        f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}/root:/{folder_path}/{filename}",
+        "🔍 Verify upload"
+    )
+    if check_file and check_file.status_code == 200:
+        print("✅ Xác nhận: File đã tồn tại trên SharePoint")
+    else:
+        print("⚠️ Cảnh báo: Không thể xác nhận file trên SharePoint")
+else:
     print("❌ Lỗi upload:", res.text)
+    
+    # Thử upload với tên file đơn giản hơn
+    simple_filename = f"test_{random.randint(100, 999)}.jpg"
+    simple_upload_url = (
+        f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
+        f"/root:/{folder_path}/{simple_filename}:/content"
+    )
+    print(f"🔄 Thử lại với tên file đơn giản: {simple_filename}")
+    retry_res = requests.put(simple_upload_url, headers=upload_headers, data=image_data)
+    print(f"🔄 Retry → Status: {retry_res.status_code}")
+    if retry_res.status_code in [200, 201]:
+        print("✅ Upload thành công với tên file đơn giản!")
+        retry_data = retry_res.json()
+        print(f"📁 Web URL: {retry_data.get('webUrl', 'N/A')}")
+    else:
+        print("❌ Vẫn lỗi:", retry_res.text)
