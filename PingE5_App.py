@@ -28,7 +28,7 @@ def send_telegram_message(msg):
     }
     try:
         res = requests.post(url, data=data)
-        log("📨 Gửi Telegram →", res.status_code)
+        log(f"📨 Gửi Telegram → {res.status_code}")
     except Exception as e:
         log("❌ Gửi Telegram lỗi:", e)
 
@@ -56,7 +56,7 @@ resp = requests.post(token_url, data=data)
 token = resp.json().get("access_token")
 if not token:
     send_telegram_message("❌ *Lỗi lấy Access Token!*")
-    log("❌ Lỗi lấy token:", resp.text)
+    log(f"❌ Lỗi lấy token: {resp.text}")
     exit()
 
 headers = {
@@ -67,10 +67,10 @@ headers = {
 def safe_get(url, label):
     try:
         res = requests.get(url, headers=headers)
-        log(f"{label} → Status:", res.status_code)
+        log(f"{label} → Status: {res.status_code}"))
         return res
     except Exception as e:
-        log(f"{label} → Lỗi:", e)
+        log(f"{label} → Lỗi:", {e})
 
 # === Kiểm tra thông tin SharePoint ===
 log("🔍 Kiểm tra thông tin SharePoint...")
@@ -131,7 +131,7 @@ def get_random_anhmoe_url():
             if img_tag and img_tag.get("src"):
                 return img_tag["src"]
     except Exception as e:
-        log("❌ Lỗi lấy ảnh từ anh.moe:", e)
+        log("❌ Lỗi lấy ảnh từ anh.moe:", {e})
     return None
 
 log("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
