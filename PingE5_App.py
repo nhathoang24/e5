@@ -176,4 +176,23 @@ else:
 
 # === Hoàn tất ===
 send_telegram_message("✅ *Ping E5 hoàn tất!*")
-print("✅ Hoàn thành ping E5!")
+log("✅ Hoàn thành ping E5!")
+
+# === Gửi log về Telegram ===
+import time
+
+bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+log_text = "\n".join(log_messages)
+max_length = 4000  # Telegram giới hạn 4096 ký tự
+
+# Nếu log quá dài thì chia nhỏ
+for i in range(0, len(log_text), max_length):
+    chunk = log_text[i:i + max_length]
+    res = requests.post(
+        f"https://api.telegram.org/bot{bot_token}/sendMessage",
+        data={"chat_id": chat_id, "text": chunk}
+    )
+    log(f"📨 Gửi Telegram → {res.status_code}")
+    time.sleep(2)  # tránh spam
