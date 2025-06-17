@@ -3,19 +3,23 @@ import os
 import json
 import time
 import random
-from pathlib import Path
+from io import BytesIO
 from dotenv import load_dotenv
 from datetime import datetime
-import subprocess
+from bs4 import BeautifulSoup
 
+# === Load biến môi trường ===
 current_date = datetime.now().strftime("%d/%m/%Y")
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
 tenant_id = os.getenv("TENANT_ID")
 user_email = os.getenv("USER_EMAIL")
+sharepoint_site_id = os.getenv("SHAREPOINT_SITE_ID")
+sharepoint_drive_id = os.getenv("SHAREPOINT_DRIVE_ID")
 
-# Step 1 - Get token
+# === Lấy access token ===
+print("🔐 Đang lấy access_token...")
 token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
 scopes = ["https://graph.microsoft.com/.default"]
 data = {
@@ -24,7 +28,6 @@ data = {
     "client_secret": client_secret,
     "grant_type": "client_credentials"
 }
-print("🔐 Đang lấy access_token...")
 resp = requests.post(token_url, data=data)
 token = resp.json().get("access_token")
 if not token:
@@ -44,7 +47,7 @@ def safe_get(url, label):
     except Exception as e:
         print(f"{label} → Lỗi:", e)
 
-# Step 2 - Gửi mail tới nhiều người
+# === Gửi mail ===
 recipients = [
     "phongse@h151147f.onmicrosoft.com", "phongsg@h151147f.onmicrosoft.com",
     "Fongsg@h151147f.onmicrosoft.com", "hd3906420@gmail.com",
@@ -71,7 +74,6 @@ mail_payload = {
   }
 }
 
-
 print("📬 Gửi mail nội bộ và ngoài hệ thống ...")
 res = requests.post(
     f"https://graph.microsoft.com/v1.0/users/{user_email}/sendMail",
@@ -80,7 +82,7 @@ res = requests.post(
 )
 print("📤 Trạng thái gửi mail:", res.status_code)
 
-# Step 3 - Ping Graph API nhiều dịch vụ
+# === Gọi API để giữ các dịch vụ hoạt động ===
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}", "👤 User info")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/drive", "📁 OneDrive")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders", "📨 MailFolders")
@@ -88,30 +90,36 @@ safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/joinedTeams", "💬 Teams")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/calendars", "📅 Calendar list")
 
-# Step 4 - Xoá nội dung thư mục OneDrive và tạo file giả trực tiếp trên cloud
-print("🧹 Xoá toàn bộ nội dung trong thư mục teste5 (giữ nguyên thư mục)...")
-os.system("rclone delete onde:teste5")
+# === Upload ảnh ngẫu nhiên lên SharePoint (trực tiếp, không lưu file) ===
+def get_random_anhmoe_url():
+    try:
+        res = requests.get("https://anh.moe/?random", timeout=10)
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text, "html.parser")
+            img_tag = soup.find("img", {"class": "media"})
+            if img_tag and img_tag.get("src"):
+                return img_tag["src"]
+    except Exception as e:
+        print("❌ Lỗi lấy ảnh từ anh.moe:", e)
+    return None
 
-print("📄 Tạo ngẫu nhiên 3-4 file giả trực tiếp trên OneDrive...")
-for i in range(random.randint(3, 4)):
-    filename = f"note_{random.randint(1000, 9999)}.txt"
-    content = f"Đây là file giả số {i+1} để giữ OneDrive hoạt động."
-    upload_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/teste5/{filename}:/content"
-    res = requests.put(upload_url, headers=headers, data=content.encode("utf-8"))
-    print(f"📎 Upload {filename} → Status:", res.status_code)
+print("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
+image_url = get_random_anhmoe_url()
+if not image_url:
+    print("❌ Không lấy được ảnh.")
+    exit()
 
+image_data = requests.get(image_url).content
+filename = f"random_image_{random.randint(1000, 9999)}.jpg"
+folder_path = "teste5"
 
-with open("rclone.conf", "w") as f:
-    f.write(os.getenv("RCLONE_CONF"))
+upload_url = (
+    f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
+    f"/root:/{folder_path}/{filename}:/content"
+)
 
-# Dùng file đó để gọi rclone
-try:
-    subprocess.run(["rclone", "--config", "rclone.conf", "delete", "onde:teste5"], check=True)
-except subprocess.CalledProcessError as e:
-    print("⚠️ Lỗi khi xóa bằng rclone:", e)
-    
-print("🧹 Xoá toàn bộ nội dung trong thư mục teste5 (giữ nguyên thư mục)...")
-subprocess.run(["rclone", "delete", "onde:teste5"], check=True)
-
-print("🖼️ Upload ảnh từ local thư mục images lên teste5...")
-subprocess.run(["rclone", "copy", "images", "onde:teste5", "--transfers=4", "--checkers=8", "--fast-list", "--ignore-times"], check=True)
+print("🚀 Upload ảnh trực tiếp lên SharePoint...")
+res = requests.put(upload_url, headers=headers, data=BytesIO(image_data))
+print(f"📤 Upload lên SharePoint → Status: {res.status_code}")
+if res.status_code >= 400:
+    print("❌ Lỗi upload:", res.text)
