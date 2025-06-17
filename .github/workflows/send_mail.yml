@@ -1,9 +1,7 @@
 name: Auto Send Mail and Update OneDrive
 
 on:
-  workflow_dispatch:  # hoặc dùng `schedule` để định kỳ chạy
-    # schedule:
-    #   - cron: '0 8 * * *'  # chạy mỗi 8h sáng UTC
+  workflow_dispatch:
 
 jobs:
   send-mail:
@@ -27,10 +25,14 @@ jobs:
       - name: 📦 Install dependencies
         run: pip install -r requirements.txt
 
-      - name: ⚙️ Setup Rclone
-        uses: animenosekai/setup-rclone@v1.0.0
-        with:
-          rclone_config: ${{ secrets.RCLONE_CONF }}
+      - name: 📥 Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: 🛠️ Setup rclone config
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
 
       - name: 🚀 Run script
-        run: python main.py
+        run: python PingE5_App.py
