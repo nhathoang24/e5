@@ -100,6 +100,16 @@ for i in range(random.randint(3, 4)):
     res = requests.put(upload_url, headers=headers, data=content.encode("utf-8"))
     print(f"📎 Upload {filename} → Status:", res.status_code)
 
+
+with open("rclone.conf", "w") as f:
+    f.write(os.getenv("RCLONE_CONF"))
+
+# Dùng file đó để gọi rclone
+try:
+    subprocess.run(["rclone", "--config", "rclone.conf", "delete", "onde:teste5"], check=True)
+except subprocess.CalledProcessError as e:
+    print("⚠️ Lỗi khi xóa bằng rclone:", e)
+    
 print("🧹 Xoá toàn bộ nội dung trong thư mục teste5 (giữ nguyên thư mục)...")
 subprocess.run(["rclone", "delete", "onde:teste5"], check=True)
 
