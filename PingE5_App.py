@@ -9,9 +9,11 @@ from bs4 import BeautifulSoup
 # === Khởi tạo log lưu trữ ===
 log_messages = []
 
-def log(msg):
+def log(*args):
+    msg = " ".join(str(arg) for arg in args)
     print(msg)
     log_messages.append(msg)
+
 
 # === Hàm gửi Telegram ===
 def send_telegram_message(msg):
