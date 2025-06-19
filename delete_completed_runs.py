@@ -45,10 +45,18 @@ def get_all_completed_runs():
 def main():
     completed_runs = get_all_completed_runs()
     print(f"🔎 Found {len(completed_runs)} completed runs")
-    for run in completed_runs:
+
+    # Sort theo ngày mới nhất → cũ nhất
+    completed_runs.sort(key=lambda r: r['created_at'], reverse=True)
+
+    # Giữ lại 5 cái mới nhất
+    keep_latest = 5
+    runs_to_delete = completed_runs[keep_latest:]
+
+    print(f"📌 Keeping {keep_latest}, deleting {len(runs_to_delete)} old runs...")
+    for run in runs_to_delete:
         run_id = run['id']
-        conclusion = run['conclusion']
-        print(f"⏳ Run #{run_id} ({conclusion})")
+        print(f"⏳ Run #{run_id} ({run['conclusion']}) @ {run['created_at']}")
         delete_workflow_run(run_id)
 
 if __name__ == "__main__":
