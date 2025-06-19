@@ -47,7 +47,7 @@ jobs:
             error.txt
 
       - name: 🧹 Delete completed workflow runs
-        if: success()
+        if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
