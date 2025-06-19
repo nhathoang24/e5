@@ -10,40 +10,45 @@ on:
 jobs:
   ping-e5:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests python-dotenv beautifulsoup4
-        
-    - name: Create .env file from secrets
-      run: |
-        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> .env
-        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> .env
-        echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> .env
-        echo "USER_EMAIL=${{ secrets.USER_EMAIL }}" >> .env
-        echo "SHAREPOINT_SITE_ID=${{ secrets.SHAREPOINT_SITE_ID }}" >> .env
-        echo "SHAREPOINT_DRIVE_ID=${{ secrets.SHAREPOINT_DRIVE_ID }}" >> .env
-        echo "TELEGRAM_BOT_TOKEN= ${{ secrets.TELEGRAM_BOT_TOKEN }}" >>.env
-        echo "TELEGRAM_CHAT_ID= ${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
-        
-    - name: Run PingE5 Application
-      run: python PingE5_App.py
-      
-    - name: Upload logs (nếu có lỗi)
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: error-logs
-        path: |
-          *.log
-          error.txt
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests python-dotenv beautifulsoup4
+
+      - name: Run PingE5 Application
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          SHAREPOINT_SITE_ID: ${{ secrets.SHAREPOINT_SITE_ID }}
+          SHAREPOINT_DRIVE_ID: ${{ secrets.SHAREPOINT_DRIVE_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python PingE5_App.py
+
+      - name: Upload logs (nếu có lỗi)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-logs
+          path: |
+            *.log
+            error.txt
+
+      - name: 🧹 Delete completed workflow runs
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: delete_completed_runs.py
