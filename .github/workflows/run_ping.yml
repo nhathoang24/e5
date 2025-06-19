@@ -3,29 +3,28 @@ name: Ping E5 Application
 
 on:
   schedule:
-    # Chạy mỗi 2 ngày (có thể điều chỉnh theo nhu cầu)
     - cron: '0 3 * * *'
     - cron: '0 15 * * *'
-  workflow_dispatch: # Cho phép chạy thủ công
+  workflow_dispatch:
 
 jobs:
   ping-e5:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests python-dotenv beautifulsoup4
-        
+
     - name: Create .env file from secrets
       run: |
         echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> .env
@@ -34,12 +33,12 @@ jobs:
         echo "USER_EMAIL=${{ secrets.USER_EMAIL }}" >> .env
         echo "SHAREPOINT_SITE_ID=${{ secrets.SHAREPOINT_SITE_ID }}" >> .env
         echo "SHAREPOINT_DRIVE_ID=${{ secrets.SHAREPOINT_DRIVE_ID }}" >> .env
-        echo "TELEGRAM_BOT_TOKEN= ${{ secrets.TELEGRAM_BOT_TOKEN }}" >>.env
-        echo "TELEGRAM_CHAT_ID= ${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
-        
+        echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+        echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
+
     - name: Run PingE5 Application
       run: python PingE5_App.py
-      
+
     - name: Upload logs (nếu có lỗi)
       if: failure()
       uses: actions/upload-artifact@v4
@@ -48,3 +47,37 @@ jobs:
         path: |
           *.log
           error.txt
+
+    - name: 🧹 Delete completed workflow runs
+      if: success()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+      run: |
+        echo "🔍 Xóa các workflow run đã hoàn tất..."
+        python -c "
+import os, http.client, json
+
+token = os.getenv('GITHUB_TOKEN')
+repo = os.getenv('GITHUB_REPOSITORY')
+headers = {
+    'Authorization': f'Bearer {token}',
+    'Accept': 'application/vnd.github.v3+json',
+    'User-Agent': 'workflow-cleaner'
+}
+
+def request(method, url):
+    conn = http.client.HTTPSConnection('api.github.com')
+    conn.request(method, url, headers=headers)
+    resp = conn.getresponse()
+    data = resp.read()
+    conn.close()
+    return json.loads(data.decode()) if data else {}
+
+runs = request('GET', f'/repos/{repo}/actions/runs?per_page=10').get('workflow_runs', [])
+for run in runs:
+    if run['status'] == 'completed' and run['conclusion'] == 'success':
+        run_id = run['id']
+        print(f'🗑️ Deleting run {run_id}...')
+        request('DELETE', f'/repos/{repo}/actions/runs/{run_id}')
+"
