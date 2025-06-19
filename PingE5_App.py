@@ -145,6 +145,8 @@ log("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
 image_url = get_random_anhmoe_url()
 if not image_url:
     log("❌ Không lấy được ảnh.")
+    log(image_url)
+    
 else:
     log(f"🔗 URL ảnh: {image_url}")
     image_response = requests.get(image_url)
