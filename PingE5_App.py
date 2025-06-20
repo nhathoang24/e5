@@ -92,18 +92,18 @@ recipients = [
 
 mail_payload = {
   "message": {
-    "subject": f"Thư Khen Thưởng – Ghi Nhận Đóng Góp Xuất Sắc ({current_date})",
+    "subject": f"Thư Cảm Ơn – Ghi Nhận Những Nỗ Lực Nổi Bật ({current_date})",
     "body": {
       "contentType": "Text",
       "content": (
         f"Ngày {current_date}\n\n"
-        "Chào buổi sáng cả nhà,\n\n"
-        "Hy vọng mọi người đã có một khởi đầu ngày mới đầy năng lượng và tinh thần tích cực.\n\n"
-        "Tôi muốn gửi lời cảm ơn chân thành và lời khen ngợi đặc biệt tới toàn thể đội ngũ vì những nỗ lực bền bỉ và kết quả tuyệt vời trong tháng vừa qua. "
-        "Nhờ sự cống hiến không mệt mỏi và tinh thần hợp tác cao, chúng ta đã hoàn thành nhiều mục tiêu quan trọng và vượt qua không ít thử thách.\n\n"
-        "Tôi thực sự tự hào khi được đồng hành cùng một tập thể chuyên nghiệp, tài năng và luôn sẵn sàng vượt lên chính mình. "
-        "Hãy tiếp tục giữ vững phong độ này để chúng ta cùng nhau chinh phục những đỉnh cao mới trong thời gian tới.\n\n"
-        "Chúc mọi người một ngày làm việc hiệu quả, nhiều niềm vui và thật nhiều cảm hứng!\n\n"
+        "Thân gửi toàn thể anh chị em,\n\n"
+        "Mong rằng mọi người đã có một buổi sáng đầy hứng khởi và năng lượng.\n\n"
+        "Nhân dịp tổng kết hoạt động gần đây, tôi muốn gửi lời cảm ơn sâu sắc đến cả đội vì những đóng góp xuất sắc và tinh thần làm việc không ngừng nghỉ trong suốt thời gian qua. "
+        "Chính nhờ sự đồng lòng, nhiệt huyết và trách nhiệm cao mà chúng ta đã đạt được nhiều cột mốc đáng tự hào.\n\n"
+        "Tôi đánh giá rất cao tinh thần đồng đội và khả năng thích ứng linh hoạt của mỗi cá nhân trong tập thể. "
+        "Sự đoàn kết và quyết tâm ấy chính là nền tảng vững chắc giúp chúng ta vững bước chinh phục những mục tiêu mới.\n\n"
+        "Chúc cả nhà một ngày mới làm việc đầy hiệu quả, hứng khởi và ngập tràn năng lượng tích cực.\n\n"
         "Trân trọng,"
       )
     },
