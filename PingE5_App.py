@@ -87,7 +87,6 @@ recipients = [
     "phongse@h151147f.onmicrosoft.com",
     "phongsg@h151147f.onmicrosoft.com",
     "Fongsg@h151147f.onmicrosoft.com",
-    "hd3906420@gmail.com",
 ]
 
 mail_payload = {
