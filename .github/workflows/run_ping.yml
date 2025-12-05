@@ -3,18 +3,14 @@ name: Ping E5 Application
 
 on:
   schedule:
-    - cron: '0 3 * * *'   # 10:00 UTC+7
-    - cron: '0 15 * * *'  # 22:00 UTC+7
+    - cron: '0 3 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
-
-concurrency:
-  group: ping-e5
-  cancel-in-progress: false
 
 jobs:
   ping-e5:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 10  # ← THÊM timeout
     
     steps:
       - name: Checkout repository
@@ -24,12 +20,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
+          cache: 'pip'  # ← THÊM cache
       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests python-dotenv beautifulsoup4
+          pip install requests python-dotenv  # ← BỎ beautifulsoup4
       
       - name: Run PingE5 Application
         env:
@@ -48,11 +44,11 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: error-logs-${{ github.run_number }}
+          name: error-logs-${{ github.run_number }}  # ← THÊM run_number
           path: |
             *.log
             error.txt
-          retention-days: 7
+          retention-days: 7  # ← Tự xóa sau 7 ngày
       
       - name: 🧹 Delete completed workflow runs
         if: always()
