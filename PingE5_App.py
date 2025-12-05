@@ -110,7 +110,7 @@ def safe_get(url, label, timeout=100):
     try:
         res = requests.get(url, headers=headers, timeout=timeout)
         res.raise_for_status()
-        log(f"✓ {label} → Status: {res.status_code}")
+        log(f"{label} → Status: {res.status_code}")
         return res
     except Exception as e:
         log(f"⚠️ {label} → Lỗi: {e}")
