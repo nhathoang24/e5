@@ -2,8 +2,15 @@ import requests
 import os
 import random
 import time
-from dotenv import load_dotenv
+import sys
 from datetime import datetime
+
+# === Optional: Load .env khi chạy local ===
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Bỏ qua trên GitHub Actions
 
 # === Khởi tạo log lưu trữ ===
 log_messages = []
@@ -29,13 +36,30 @@ def send_telegram_message(msg):
         "parse_mode": "Markdown"
     }
     try:
-        res = requests.post(url, data=data)
+        res = requests.post(url, data=data, timeout=10)
         log(f"📨 Gửi Telegram → {res.status_code}")
     except Exception as e:
         log(f"❌ Gửi Telegram lỗi: {e}")
 
+# === Validate environment variables ===
+log("🔍 Kiểm tra biến môi trường...")
+REQUIRED_VARS = [
+    "CLIENT_ID", "CLIENT_SECRET", "TENANT_ID", 
+    "USER_EMAIL", "SHAREPOINT_SITE_ID", "SHAREPOINT_DRIVE_ID"
+]
+
+missing_vars = [var for var in REQUIRED_VARS if not os.getenv(var)]
+if missing_vars:
+    error_msg = f"❌ Thiếu biến môi trường: {', '.join(missing_vars)}"
+    log(error_msg)
+    send_telegram_message(f"*GitHub Actions Error*\n{error_msg}")
+    
+    with open("error.txt", "w") as f:
+        f.write(f"Missing environment variables:\n{', '.join(missing_vars)}")
+    
+    sys.exit(1)
+
 # === Load biến môi trường ===
-load_dotenv()
 current_date = datetime.now().strftime("%d/%m/%Y")
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
@@ -43,7 +67,7 @@ tenant_id = os.getenv("TENANT_ID")
 user_email = os.getenv("USER_EMAIL")
 sharepoint_site_id = os.getenv("SHAREPOINT_SITE_ID")
 sharepoint_drive_id = os.getenv("SHAREPOINT_DRIVE_ID")
-gemini_api_key = os.getenv("GEMINI_API_KEY") # Lấy API Key Gemini
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # === Lấy access token Microsoft ===
 log("🔐 Đang lấy access_token Microsoft...")
@@ -55,12 +79,26 @@ data = {
     "client_secret": client_secret,
     "grant_type": "client_credentials"
 }
-resp = requests.post(token_url, data=data)
-token = resp.json().get("access_token")
-if not token:
-    send_telegram_message("❌ *Lỗi lấy Access Token Microsoft!*")
-    log(f"❌ Lỗi lấy token: {resp.text}")
-    exit()
+
+try:
+    resp = requests.post(token_url, data=data, timeout=30)
+    resp.raise_for_status()
+    token = resp.json().get("access_token")
+    
+    if not token:
+        raise ValueError("No access_token in response")
+    
+    log("✅ Access token lấy thành công")
+    
+except Exception as e:
+    error_msg = f"❌ Lỗi lấy token: {e}"
+    log(error_msg)
+    send_telegram_message(f"*Authentication Failed*\n`{error_msg}`")
+    
+    with open("error.txt", "w") as f:
+        f.write(f"Authentication Error:\n{str(e)}\n{resp.text if 'resp' in locals() else ''}")
+    
+    sys.exit(1)
 
 headers = {
     "Authorization": f"Bearer {token}",
@@ -68,25 +106,25 @@ headers = {
 }
 
 # === Hàm GET an toàn ===
-def safe_get(url, label):
+def safe_get(url, label, timeout=30):
     try:
-        res = requests.get(url, headers=headers)
-        log(f"{label} → Status:", res.status_code)
+        res = requests.get(url, headers=headers, timeout=timeout)
+        res.raise_for_status()
+        log(f"✓ {label} → Status: {res.status_code}")
         return res
     except Exception as e:
-        log(f"{label} → Lỗi:", e)
+        log(f"⚠️ {label} → Lỗi: {e}")
+        return None
 
-# === Hàm lấy nội dung từ Gemini API (REST) ===
+# === Hàm lấy nội dung từ Gemini API ===
 def get_gemini_content():
     if not gemini_api_key:
         log("⚠️ Không tìm thấy GEMINI_API_KEY. Sử dụng nội dung mặc định.")
         return None
 
     log("🤖 Đang nhờ Gemini viết nội dung...")
-    # Sử dụng model gemini-1.5-flash cho nhanh và nhẹ
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={gemini_api_key}"
     
-    # Prompt ngẫu nhiên để nội dung không bị trùng lặp
     prompts = [
         "Viết một đoạn văn ngắn (khoảng 50 từ) về một sự thật thú vị trong khoa học máy tính.",
         "Viết một mẹo nhỏ hữu ích cho lập trình viên Python.",
@@ -106,29 +144,29 @@ def get_gemini_content():
         response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
             result = response.json()
-            # Parse JSON để lấy text
             text_content = result['candidates'][0]['content']['parts'][0]['text']
             log("✅ Gemini đã trả về nội dung.")
             return text_content
         else:
-            log(f"❌ Lỗi Gemini API: {response.status_code} - {response.text}")
+            log(f"⚠️ Lỗi Gemini API: {response.status_code}")
             return None
     except Exception as e:
-        log(f"❌ Lỗi khi gọi Gemini: {e}")
+        log(f"⚠️ Lỗi khi gọi Gemini: {e}")
         return None
 
 # === Kiểm tra thông tin SharePoint ===
 log("🔍 Kiểm tra thông tin SharePoint...")
-site_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}", "📊 Site info")
-drive_info = safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}", "📁 Drive info")
+safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}", "📊 Site info")
+safe_get(f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}", "📁 Drive info")
 
-# === Gửi mail ===
+# === Email recipients (HARDCODED) ===
 recipients = [
     "phongse@h151147f.onmicrosoft.com",
     "phongsg@h151147f.onmicrosoft.com",
     "Fongsg@h151147f.onmicrosoft.com",
 ]
 
+# === Gửi mail ===
 mail_payload = {
   "message": {
     "subject": f"E5 Developer Activity Report ({current_date})",
@@ -148,11 +186,17 @@ mail_payload = {
 }
 
 log("📬 Gửi mail kích hoạt activity...")
-res = requests.post(
-    f"https://graph.microsoft.com/v1.0/users/{user_email}/sendMail",
-    headers=headers,
-    json=mail_payload
-)
+try:
+    res = requests.post(
+        f"https://graph.microsoft.com/v1.0/users/{user_email}/sendMail",
+        headers=headers,
+        json=mail_payload,
+        timeout=30
+    )
+    res.raise_for_status()
+    log(f"✅ Email sent → Status: {res.status_code}")
+except Exception as e:
+    log(f"⚠️ Gửi mail lỗi: {e}")
 
 # === Ping các API Microsoft ===
 log("🔄 Ping các dịch vụ Microsoft Graph...")
@@ -164,23 +208,18 @@ safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox
 # === TẠO VÀ UPLOAD FILE TỪ GEMINI ===
 log("📝 Đang chuẩn bị file upload...")
 
-# 1. Lấy nội dung từ Gemini
 gemini_text = get_gemini_content()
 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 if gemini_text:
-    # Nếu có Gemini, format đẹp
     file_content = f"--- AUTOMATED CONTENT BY GEMINI ---\nTime: {timestamp}\n\n{gemini_text}\n\n-----------------------------------"
 else:
-    # Fallback nếu Gemini lỗi
     log("⚠️ Dùng nội dung fallback do Gemini lỗi/thiếu key.")
     random_id = random.randint(100000, 999999)
     file_content = f"Auto-generated file for E5 Keep Active.\nTime: {timestamp}\nRandom ID: {random_id}"
 
-# 2. Tạo tên file
 filename = f"gemini_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 
-# 3. Chuẩn bị upload
 upload_url = (
     f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
     f"/root:/{filename}:/content"
@@ -188,39 +227,47 @@ upload_url = (
 
 upload_headers = {
     "Authorization": f"Bearer {token}",
-    "Content-Type": "text/plain; charset=utf-8" # Thêm charset utf-8
+    "Content-Type": "text/plain; charset=utf-8"
 }
 
 log(f"🚀 Upload file lên SharePoint: {filename}")
 
-# 4. Thực hiện upload
 try:
-    # encode utf-8 cực kỳ quan trọng vì Gemini trả về tiếng Việt có dấu
-    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'))
-    log(f"📤 Upload → Status: {res.status_code}")
-
+    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=30)
+    res.raise_for_status()
+    log(f"✅ Upload thành công! → Status: {res.status_code}")
+    
     if res.status_code in [200, 201]:
         response_data = res.json()
         file_url = response_data.get("webUrl", "N/A")
-        log(f"✅ Upload thành công! URL: {file_url}")
-    else:
-        log(f"❌ *Upload lỗi!*\nStatus: `{res.status_code}`\n{res.text}")
+        log(f"📎 File URL: {file_url}")
+        
 except Exception as e:
-    log(f"❌ Lỗi ngoại lệ khi upload: {e}")
+    log(f"⚠️ Upload lỗi: {e}")
 
 # === Hoàn tất ===
 log("✅ Hoàn thành ping E5!")
 
-# === Gửi log về Telegram ===
-log_text = "\n".join(log_messages)
-max_length = 4000
-for i in range(0, len(log_text), max_length):
-    chunk = log_text[i:i + max_length]
-    try:
-        res = requests.post(
-            f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage",
-            data={"chat_id": os.getenv('TELEGRAM_CHAT_ID'), "text": chunk}
-        )
-    except Exception as e:
-        print(f"Lỗi gửi log Telegram: {e}")
-    time.sleep(2)
+# === Lưu log ra file cho GitHub Actions ===
+try:
+    with open("execution.log", "w", encoding="utf-8") as f:
+        f.write("\n".join(log_messages))
+except Exception as e:
+    print(f"Không thể ghi log file: {e}")
+
+# === Gửi summary về Telegram (thay vì toàn bộ log) ===
+summary = f"""
+✅ *E5 Keep Active - Report*
+
+📅 Date: `{current_date}`
+📧 Emails: `{len(recipients)} sent`
+📁 Files: `1 uploaded`
+🔄 Status: `Success`
+
+_Automated by GitHub Actions_
+"""
+
+send_telegram_message(summary)
+
+# === Exit code để GitHub Actions biết kết quả ===
+sys.exit(0)
