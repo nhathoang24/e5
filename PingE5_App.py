@@ -4,7 +4,7 @@ import random
 import time
 from dotenv import load_dotenv
 from datetime import datetime
-from bs4 import BeautifulSoup
+# Đã bỏ import BeautifulSoup vì không cần dùng nữa
 
 # === Khởi tạo log lưu trữ ===
 log_messages = []
@@ -13,7 +13,6 @@ def log(*args):
     msg = " ".join(str(arg) for arg in args)
     print(msg)
     log_messages.append(msg)
-
 
 # === Hàm gửi Telegram ===
 def send_telegram_message(msg):
@@ -97,12 +96,8 @@ mail_payload = {
       "content": (
         f"Ngày {current_date}\n\n"
         "Thân gửi toàn thể anh chị em,\n\n"
-        "Mong rằng mọi người đã có một buổi sáng đầy hứng khởi và năng lượng.\n\n"
-        "Nhân dịp tổng kết hoạt động gần đây, tôi muốn gửi lời cảm ơn sâu sắc đến cả đội vì những đóng góp xuất sắc và tinh thần làm việc không ngừng nghỉ trong suốt thời gian qua. "
-        "Chính nhờ sự đồng lòng, nhiệt huyết và trách nhiệm cao mà chúng ta đã đạt được nhiều cột mốc đáng tự hào.\n\n"
-        "Tôi đánh giá rất cao tinh thần đồng đội và khả năng thích ứng linh hoạt của mỗi cá nhân trong tập thể. "
-        "Sự đoàn kết và quyết tâm ấy chính là nền tảng vững chắc giúp chúng ta vững bước chinh phục những mục tiêu mới.\n\n"
-        "Chúc cả nhà một ngày mới làm việc đầy hiệu quả, hứng khởi và ngập tràn năng lượng tích cực.\n\n"
+        "Hệ thống E5 Developer Checkpoint.\n"
+        "Tiến trình tự động duy trì hoạt động.\n\n"
         "Trân trọng,"
       )
     },
@@ -126,56 +121,44 @@ safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/joinedTeams", "💬 Teams")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/calendars", "📅 Calendar list")
 
-# === Hàm lấy URL ảnh ngẫu nhiên ===
-def get_random_anhmoe_url():
-    try:
-        res = requests.get("https://anh.moe/?random", timeout=10)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, "html.parser")
-            img_tag = soup.find("img", {"class": "media"})
-            if img_tag and img_tag.get("src"):
-                return img_tag["src"]
-    except Exception as e:
-        log(f"❌ Lỗi lấy ảnh từ anh.moe: {e}")
-    return None
+# === TẠO VÀ UPLOAD FILE NGẪU NHIÊN (MỚI) ===
+log("📝 Đang tạo file text ngẫu nhiên...")
 
-# === Upload ảnh ===
-log("🌐 Đang tải ảnh ngẫu nhiên từ Internet...")
-image_url = get_random_anhmoe_url()
-if not image_url:
-    log("❌ Không lấy được ảnh.")
-    log(image_url)
-    
-else:
-    log(f"🔗 URL ảnh: {image_url}")
-    image_response = requests.get(image_url)
-    log(f"📥 Tải ảnh → Status: {image_response.status_code}, Size: {len(image_response.content)} bytes")
+# 1. Tạo nội dung file
+random_id = random.randint(100000, 999999)
+timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+file_content = f"Auto-generated file for E5 Keep Active.\nTime: {timestamp}\nRandom ID: {random_id}"
 
-    if image_response.status_code == 200:
-        image_data = image_response.content
-        filename = f"random_image_{random.randint(1000, 9999)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+# 2. Tạo tên file
+filename = f"auto_ping_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 
-        upload_url = (
-            f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
-            f"/root:/{filename}:/content"
-        )
+# 3. Chuẩn bị upload
+upload_url = (
+    f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
+    f"/root:/{filename}:/content"
+)
 
-        upload_headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "image/jpeg"
-        }
+upload_headers = {
+    "Authorization": f"Bearer {token}",
+    "Content-Type": "text/plain"  # Đổi content-type thành text/plain
+}
 
-        log(f"🚀 Upload ảnh lên SharePoint: {filename}")
-        res = requests.put(upload_url, headers=upload_headers, data=image_data)
-        log(f"📤 Upload → Status: {res.status_code}")
+log(f"🚀 Upload file text lên SharePoint: {filename}")
 
-        if res.status_code in [200, 201]:
-            response_data = res.json()
-            file_url = response_data.get("webUrl", "N/A")
-        else:
-            log(f"❌ *Upload ảnh lỗi!*\nStatus: `{res.status_code}`\n{res.text}")
+# 4. Thực hiện upload
+try:
+    # encode('utf-8') để chuyển string thành bytes trước khi gửi
+    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8'))
+    log(f"📤 Upload → Status: {res.status_code}")
+
+    if res.status_code in [200, 201]:
+        response_data = res.json()
+        file_url = response_data.get("webUrl", "N/A")
+        log(f"✅ Upload thành công! URL: {file_url}")
     else:
-        log("❌ Không thể tải ảnh từ URL")
+        log(f"❌ *Upload lỗi!*\nStatus: `{res.status_code}`\n{res.text}")
+except Exception as e:
+    log(f"❌ Lỗi ngoại lệ khi upload: {e}")
 
 # === Hoàn tất ===
 log("✅ Hoàn thành ping E5!")
@@ -185,9 +168,11 @@ log_text = "\n".join(log_messages)
 max_length = 4000  # Telegram giới hạn 4096 ký tự
 for i in range(0, len(log_text), max_length):
     chunk = log_text[i:i + max_length]
-    res = requests.post(
-        f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage",
-        data={"chat_id": os.getenv('TELEGRAM_CHAT_ID'), "text": chunk}
-    )
-    log(f"📨 Gửi Telegram → {res.status_code}")
+    try:
+        res = requests.post(
+            f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage",
+            data={"chat_id": os.getenv('TELEGRAM_CHAT_ID'), "text": chunk}
+        )
+    except Exception as e:
+        print(f"Lỗi gửi log Telegram: {e}")
     time.sleep(2)  # tránh spam
