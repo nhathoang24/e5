@@ -36,7 +36,7 @@ def send_telegram_message(msg):
         "parse_mode": "Markdown"
     }
     try:
-        res = requests.post(url, data=data, timeout=10)
+        res = requests.post(url, data=data, timeout=100)
         log(f"📨 Gửi Telegram → {res.status_code}")
     except Exception as e:
         log(f"❌ Gửi Telegram lỗi: {e}")
@@ -81,7 +81,7 @@ data = {
 }
 
 try:
-    resp = requests.post(token_url, data=data, timeout=30)
+    resp = requests.post(token_url, data=data, timeout=100)
     resp.raise_for_status()
     token = resp.json().get("access_token")
     
@@ -106,7 +106,7 @@ headers = {
 }
 
 # === Hàm GET an toàn ===
-def safe_get(url, label, timeout=30):
+def safe_get(url, label, timeout=100):
     try:
         res = requests.get(url, headers=headers, timeout=timeout)
         res.raise_for_status()
@@ -123,7 +123,7 @@ def get_gemini_content():
         return None
 
     log("🤖 Đang nhờ Gemini viết nội dung...")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={gemini_api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_api_key}"
     
     prompts = [
         "Viết một đoạn văn ngắn (khoảng 50 từ) về một sự thật thú vị trong khoa học máy tính.",
@@ -141,7 +141,7 @@ def get_gemini_content():
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=100)
         if response.status_code == 200:
             result = response.json()
             text_content = result['candidates'][0]['content']['parts'][0]['text']
@@ -191,7 +191,7 @@ try:
         f"https://graph.microsoft.com/v1.0/users/{user_email}/sendMail",
         headers=headers,
         json=mail_payload,
-        timeout=30
+        timeout=100
     )
     res.raise_for_status()
     log(f"✅ Email sent → Status: {res.status_code}")
@@ -233,7 +233,7 @@ upload_headers = {
 log(f"🚀 Upload file lên SharePoint: {filename}")
 
 try:
-    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=30)
+    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=100)
     res.raise_for_status()
     log(f"✅ Upload thành công! → Status: {res.status_code}")
     
@@ -248,26 +248,16 @@ except Exception as e:
 # === Hoàn tất ===
 log("✅ Hoàn thành ping E5!")
 
-# === Lưu log ra file cho GitHub Actions ===
-try:
-    with open("execution.log", "w", encoding="utf-8") as f:
-        f.write("\n".join(log_messages))
-except Exception as e:
-    print(f"Không thể ghi log file: {e}")
-
-# === Gửi summary về Telegram (thay vì toàn bộ log) ===
-summary = f"""
-✅ *E5 Keep Active - Report*
-
-📅 Date: `{current_date}`
-📧 Emails: `{len(recipients)} sent`
-📁 Files: `1 uploaded`
-🔄 Status: `Success`
-
-_Automated by GitHub Actions_
-"""
-
-send_telegram_message(summary)
-
-# === Exit code để GitHub Actions biết kết quả ===
-sys.exit(0)
+# === Gửi log về Telegram ===
+log_text = "\n".join(log_messages)
+max_length = 4000
+for i in range(0, len(log_text), max_length):
+    chunk = log_text[i:i + max_length]
+    try:
+        res = requests.post(
+            f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage",
+            data={"chat_id": os.getenv('TELEGRAM_CHAT_ID'), "text": chunk}
+        )
+    except Exception as e:
+        print(f"Lỗi gửi log Telegram: {e}")
+    time.sleep(2)
