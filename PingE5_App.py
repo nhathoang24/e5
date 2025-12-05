@@ -196,7 +196,7 @@ log(f"🚀 Upload file lên SharePoint: {filename}")
 # 4. Thực hiện upload
 try:
     # encode utf-8 cực kỳ quan trọng vì Gemini trả về tiếng Việt có dấu
-    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8'))
+    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'))
     log(f"📤 Upload → Status: {res.status_code}")
 
     if res.status_code in [200, 201]:
