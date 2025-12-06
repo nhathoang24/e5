@@ -5,20 +5,23 @@ Tài liệu này hướng dẫn cách lấy các giá trị cần thiết để 
 ## Các biến cần lấy
 `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET`, `SHAREPOINT_SITE_ID`, `SHAREPOINT_DRIVE_ID`
 
-## Bước 1: Tạo App trên Azure Portal
+## Bước 1: Lấy Tenant ID
 1. Truy cập [Azure Portal](https://portal.azure.com/).
-2. Tìm kiếm và chọn **App registrations**.
-3. Chọn **New registration**.
+2. Tại trang chủ, tìm mục **Manage Microsoft Entra ID** và chọn **View**.
+3. Tại trang **Overview**, bạn sẽ thấy **`TENANT_ID`** (Tenant ID) - sao chép giá trị này.
+
+## Bước 2: Tạo App Registration
+1. Ở menu bên trái, chọn **App registrations**.
+2. Chọn **New registration**.
     - Đặt tên (Name): Ví dụ `MySharePointApp`.
     - Supported account types: Chọn *Accounts in this organizational directory only*.
     - Nhấn **Register**.
 
-## Bước 2: Lấy thông tin ID
+## Bước 3: Lấy Client ID
 Sau khi tạo xong, tại trang **Overview** của App, bạn sẽ thấy:
 - **`CLIENT_ID`**: Sao chép giá trị tại dòng *Application (client) ID*.
-- **`TENANT_ID`**: Sao chép giá trị tại dòng *Directory (tenant) ID*.
 
-## Bước 3: Tạo Client Secret
+## Bước 4: Tạo Client Secret
 1. Trong menu bên trái, chọn **Certificates & secrets**.
 2. Chọn tab **Client secrets** > **New client secret**.
 3. Đặt mô tả và thời gian hết hạn, nhấn **Add**.
@@ -45,3 +48,14 @@ Cách dễ nhất là sử dụng [Microsoft Graph Explorer](https://developer.m
     - Tìm Drive mong muốn (thường là "Documents"), copy giá trị `id` của nó. Đây là `SHAREPOINT_DRIVE_ID`.
 
 ---
+
+## Cấu trúc file .env mẫu
+
+```env
+# Microsoft Azure & SharePoint
+TENANT_ID=
+CLIENT_ID=
+CLIENT_SECRET=
+SHAREPOINT_SITE_ID=
+SHAREPOINT_DRIVE_ID=
+```
