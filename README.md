@@ -1,46 +1,98 @@
-# Hướng dẫn cấu hình hệ thống & Lấy Environment Variables
+# Hướng dẫn lấy thông tin cấu hình (Environment Variables)
 
-Tài liệu này hướng dẫn chi tiết cách lấy các giá trị cấu hình cho file `.env`.
+Tài liệu này hướng dẫn cách lấy các giá trị cần thiết để cấu hình file `.env` cho dự án.
+
+## 1. Cấu hình Microsoft Azure & SharePoint
+**Các biến:** `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET`, `SHAREPOINT_SITE_ID`, `SHAREPOINT_DRIVE_ID`, `USER_EMAIL`
+
+### Bước 1: Tạo App trên Azure Portal
+1. Truy cập [Azure Portal](https://portal.azure.com/).
+2. Tìm kiếm và chọn **App registrations**.
+3. Chọn **New registration**.
+    - Đặt tên (Name): Ví dụ `MySharePointApp`.
+    - Supported account types: Chọn *Accounts in this organizational directory only*.
+    - Nhấn **Register**.
+
+### Bước 2: Lấy thông tin ID
+Sau khi tạo xong, tại trang **Overview** của App, bạn sẽ thấy:
+- **`CLIENT_ID`**: Sao chép giá trị tại dòng *Application (client) ID*.
+- **`TENANT_ID`**: Sao chép giá trị tại dòng *Directory (tenant) ID*.
+
+### Bước 3: Tạo Client Secret
+1. Trong menu bên trái, chọn **Certificates & secrets**.
+2. Chọn tab **Client secrets** > **New client secret**.
+3. Đặt mô tả và thời gian hết hạn, nhấn **Add**.
+4. **QUAN TRỌNG:** Sao chép ngay giá trị ở cột **Value** (không phải Secret ID). Đây chính là **`CLIENT_SECRET`**.
+
+### Bước 4: Cấp quyền (API Permissions)
+1. Chọn **API permissions** > **Add a permission** > **Microsoft Graph**.
+2. Chọn **Application permissions**.
+3. Tìm và tích chọn: `Sites.Read.All`, `Files.Read.All` (hoặc `Write` tùy nhu cầu).
+4. Nhấn **Add permissions**.
+5. Nhấn nút **Grant admin consent for...** để kích hoạt quyền.
+
+### Bước 5: Lấy SharePoint Site ID & Drive ID
+Cách dễ nhất là sử dụng [Microsoft Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer).
+1. Đăng nhập Graph Explorer bằng tài khoản của bạn.
+2. **Lấy `SHAREPOINT_SITE_ID`**:
+    - Chạy GET request: `https://graph.microsoft.com/v1.0/sites/root` (hoặc thay `root` bằng `hostname:/sites/ten-site`).
+    - Kết quả trả về JSON, tìm trường `id`. Giá trị này là `SHAREPOINT_SITE_ID`.
+3. **Lấy `SHAREPOINT_DRIVE_ID`**:
+    - Sử dụng ID vừa lấy ở trên, chạy GET request: `https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE_ID}/drives`.
+    - Tìm Drive mong muốn (thường là "Documents"), copy giá trị `id` của nó. Đây là `SHAREPOINT_DRIVE_ID`.
+
+### Bước 6: Email người dùng
+- **`USER_EMAIL`**: Đơn giản là địa chỉ email Microsoft/Outlook bạn sử dụng để đăng nhập và có quyền truy cập vào SharePoint nói trên.
 
 ---
 
-## 1. Cấu hình Microsoft Azure & SharePoint (Quan trọng)
+## 2. Cấu hình Google Gemini
+**Các biến:** `GEMINI_API_KEY`
 
-Để bot có thể truy cập SharePoint, bạn cần đăng ký ứng dụng trên Azure và cấp quyền.
+1. Truy cập [Google AI Studio](https://aistudio.google.com/).
+2. Đăng nhập bằng tài khoản Google.
+3. Nhấn vào nút **Get API key** (ở menu bên trái hoặc góc trên).
+4. Nhấn **Create API key**.
+5. Sao chép chuỗi ký tự vừa tạo. Đây là **`GEMINI_API_KEY`**.
 
-### Bước 1: Lấy Tenant ID và Đăng ký App
-1. Truy cập [Azure Portal](https://portal.azure.com/).
-2. Tìm và chọn **Microsoft Entra ID** (tên cũ là Azure Active Directory).
-3. Tại trang **Overview**, sao chép **Tenant ID**.
-   -> Điền vào `.env`: `TENANT_ID`
-4. Ở menu trái, chọn **App registrations** -> **New registration**.
-   - **Name**: `SharePointBot` (hoặc tên tùy ý).
-   - **Supported account types**: *Accounts in this organizational directory only*.
-   - Nhấn **Register**.
+---
 
-### Bước 2: Lấy Client ID
-Tại trang **Overview** của App vừa tạo, sao chép **Application (client) ID**.
--> Điền vào `.env`: `CLIENT_ID`
+## 3. Cấu hình Telegram
+**Các biến:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
 
-### Bước 3: Tạo Client Secret
-1. Vào menu **Certificates & secrets** -> **Client secrets** -> **New client secret**.
-2. Đặt tên và hạn sử dụng -> **Add**.
-3. **QUAN TRỌNG:** Sao chép ngay giá trị ở cột **Value** (Không phải Secret ID).
-   -> Điền vào `.env`: `CLIENT_SECRET`
+### Bước 1: Tạo Bot và lấy Token
+1. Mở Telegram, tìm kiếm user `@BotFather`.
+2. Chat lệnh `/newbot`.
+3. Đặt tên hiển thị và username cho bot theo hướng dẫn (username phải kết thúc bằng `bot`).
+4. BotFather sẽ gửi lại một tin nhắn chứa Access Token. Đây là **`TELEGRAM_BOT_TOKEN`**.
 
-### Bước 4: Cấp quyền (API Permissions)
-1. Vào menu **API permissions** -> **Add a permission** -> **Microsoft Graph**.
-2. Chọn **Application permissions**.
-3. Tìm và tích chọn:
-   - `Sites.Read.All` (hoặc `Sites.ReadWrite.All`)
-   - `Files.Read.All` (hoặc `Files.ReadWrite.All`)
-4. Nhấn **Add permissions**.
-5. Nhấn nút **Grant admin consent for...** (dấu tích xanh) để hiệu lực hóa quyền.
+### Bước 2: Lấy Chat ID
+1. Tìm username của bot bạn vừa tạo trên Telegram và nhấn **Start** (hoặc gửi một tin nhắn bất kỳ "Hello").
+2. Mở trình duyệt web, truy cập đường dẫn sau (thay thế token của bạn vào):
+   `https://api.telegram.org/bot<YOUR_TELEGRAM_BOT_TOKEN>/getUpdates`
+3. Tìm trong chuỗi JSON trả về:
+   - Tìm đối tượng `chat`.
+   - Giá trị `id` bên trong đó chính là **`TELEGRAM_CHAT_ID`**.
+   *(Lưu ý: Nếu ID bắt đầu bằng dấu trừ `-`, hãy lấy cả dấu trừ, đó thường là ID của Group chat).*
 
-### Bước 5: Điền thông tin sơ bộ vào .env
-Trước khi lấy Site ID và Drive ID, bạn cần điền 4 thông số đã lấy ở trên và email của bạn vào file `.env`:
+---
+
+## Cấu trúc file .env mẫu
+
+Tạo file `.env` tại thư mục gốc và điền các giá trị đã lấy:
+
 ```env
-TENANT_ID=xxxx-xxxx-xxxx
-CLIENT_ID=xxxx-xxxx-xxxx
-CLIENT_SECRET=xxxx-xxxx-xxxx
-USER_EMAIL=email_cua_ban@domain.com
+# Microsoft Azure & SharePoint
+TENANT_ID=
+CLIENT_ID=
+CLIENT_SECRET=
+SHAREPOINT_SITE_ID=
+SHAREPOINT_DRIVE_ID=
+USER_EMAIL=
+
+# Google Gemini
+GEMINI_API_KEY=
+
+# Telegram
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
