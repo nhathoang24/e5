@@ -27,15 +27,17 @@ Sau khi tạo xong, tại trang **Overview** của App, bạn sẽ thấy:
 3. Đặt mô tả và thời gian hết hạn, nhấn **Add**.
 4. **QUAN TRỌNG:** Sao chép ngay giá trị ở cột **Value** (không phải Secret ID). Đây chính là **`CLIENT_SECRET`**.
 
-## Bước 4: Cấp quyền (API Permissions)
+## Bước 5: Cấp quyền (API Permissions)
 1. Chọn **API permissions** > **Add a permission** > **Microsoft Graph**.
 2. Chọn **Application permissions**.
 3. Tìm và tích chọn: `Sites.Read.All`, `Files.Read.All` (hoặc `Write` tùy nhu cầu).
 4. Nhấn **Add permissions**.
 5. Nhấn nút **Grant admin consent for...** để kích hoạt quyền.
 
-## Bước 5: Lấy SharePoint Site ID & Drive ID
-Cách dễ nhất là sử dụng [Microsoft Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer).
+## Bước 6: Lấy SharePoint Site ID & Drive ID
+
+### Cách 1: Sử dụng Microsoft Graph Explorer
+Sử dụng [Microsoft Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer).
 
 1. Đăng nhập Graph Explorer bằng tài khoản của bạn.
 
@@ -46,3 +48,19 @@ Cách dễ nhất là sử dụng [Microsoft Graph Explorer](https://developer.m
 3. **Lấy `SHAREPOINT_DRIVE_ID`**:
     - Sử dụng ID vừa lấy ở trên, chạy GET request: `https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE_ID}/drives`.
     - Tìm Drive mong muốn (thường là "Documents"), copy giá trị `id` của nó. Đây là `SHAREPOINT_DRIVE_ID`.
+
+### Cách 2: Sử dụng script Python
+1. Tải file `filesharepoint.py` về.
+2. Tạo file `.env` cùng thư mục với `filesharepoint.py`.
+3. Điền các giá trị đã lấy ở các bước trên vào file `.env`:
+```env
+TENANT_ID=your_tenant_id
+CLIENT_ID=your_client_id
+CLIENT_SECRET=your_client_secret
+USER_EMAIL=email@ema.onmicrosoft.com
+```
+4. Chạy script:
+```bash
+python filesharepoint.py
+```
+5. Script sẽ tự động lấy và hiển thị `SHAREPOINT_SITE_ID` và `SHAREPOINT_DRIVE_ID`.
