@@ -57,10 +57,45 @@ Sử dụng [Microsoft Graph Explorer](https://developer.microsoft.com/en-us/gra
 TENANT_ID=your_tenant_id
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
-USER_EMAIL=email@ema.onmicrosoft.com
 ```
 4. Chạy script:
 ```bash
 python filesharepoint.py
 ```
 5. Script sẽ tự động lấy và hiển thị `SHAREPOINT_SITE_ID` và `SHAREPOINT_DRIVE_ID`.
+
+---
+
+## Cấu trúc file .env mẫu
+
+### Cho các bước thủ công
+```env
+# Microsoft Azure & SharePoint
+TENANT_ID=
+CLIENT_ID=
+CLIENT_SECRET=
+SHAREPOINT_SITE_ID=
+SHAREPOINT_DRIVE_ID=
+```
+
+### Cho script tự động (GitHub Actions/CI/CD)
+Nếu sử dụng script tự động, cần tạo các secrets sau:
+
+```env
+# Microsoft Azure & SharePoint
+CLIENT_ID=                    # Application (client) ID từ Azure App Registration
+CLIENT_SECRET=                # Client secret từ Azure App Registration
+TENANT_ID=                    # Directory (tenant) ID từ Microsoft Entra ID
+SHAREPOINT_SITE_ID=          # ID của SharePoint site cần truy cập
+SHAREPOINT_DRIVE_ID=         # ID của Drive trong SharePoint (thường là Documents)
+USER_EMAIL=                   # email@domain.onmiscrosoft.com
+
+# Google Gemini AI
+GEMINI_API_KEY=              # API key từ Google AI Studio
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=          # Bot token từ @BotFather
+TELEGRAM_CHAT_ID=            # Chat ID để bot gửi thông báo
+```
+
+**Lưu ý:** Các biến `USER_EMAIL`, `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` cần được cấu hình thêm tùy theo nhu cầu sử dụng script.
