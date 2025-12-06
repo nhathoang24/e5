@@ -46,16 +46,3 @@ Cách dễ nhất là sử dụng [Microsoft Graph Explorer](https://developer.m
 3. **Lấy `SHAREPOINT_DRIVE_ID`**:
     - Sử dụng ID vừa lấy ở trên, chạy GET request: `https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE_ID}/drives`.
     - Tìm Drive mong muốn (thường là "Documents"), copy giá trị `id` của nó. Đây là `SHAREPOINT_DRIVE_ID`.
-
----
-
-## Cấu trúc file .env mẫu
-
-```env
-# Microsoft Azure & SharePoint
-TENANT_ID=
-CLIENT_ID=
-CLIENT_SECRET=
-SHAREPOINT_SITE_ID=
-SHAREPOINT_DRIVE_ID=
-```
