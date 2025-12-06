@@ -205,6 +205,48 @@ safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/drive", "📁 One
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders", "📨 MailFolders")
 safe_get(f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox/messages?$top=1", "📥 Inbox latest")
 
+def cleanup_old_files(keep_count=5):
+    log("🧹 Đang kiểm tra và dọn dẹp file cũ...")
+    try:
+        # 1. Lấy danh sách file trong thư mục gốc của Drive
+        list_url = f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}/root/children"
+        res = requests.get(list_url, headers=headers, timeout=100)
+        res.raise_for_status()
+        
+        items = res.json().get('value', [])
+        
+        # 2. Lọc ra các file do bot tạo (có tiền tố gemini_log_)
+        # Lưu ý: Lọc để tránh xóa nhầm file quan trọng khác của bạn
+        log_files = [f for f in items if f.get('name', '').startswith('gemini_log_')]
+        
+        # 3. Sắp xếp theo thời gian tạo (Mới nhất đứng đầu)
+        # API trả về createdDateTime dạng chuỗi ISO, có thể sort trực tiếp
+        log_files.sort(key=lambda x: x['createdDateTime'], reverse=True)
+        
+        # 4. Kiểm tra số lượng
+        if len(log_files) > keep_count:
+            files_to_delete = log_files[keep_count:] # Lấy danh sách file dư thừa
+            log(f"⚠️ Tìm thấy {len(log_files)} file log. Sẽ xóa {len(files_to_delete)} file cũ...")
+            
+            for file in files_to_delete:
+                file_id = file['id']
+                file_name = file['name']
+                delete_url = f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}/items/{file_id}"
+                
+                try:
+                    del_res = requests.delete(delete_url, headers=headers, timeout=60)
+                    if del_res.status_code == 204:
+                        log(f"🗑️ Đã xóa: {file_name}")
+                    else:
+                        log(f"❌ Xóa thất bại {file_name}: {del_res.status_code}")
+                except Exception as e:
+                    log(f"❌ Lỗi khi xóa {file_name}: {e}")
+        else:
+            log(f"✅ Số lượng file ({len(log_files)}) vẫn trong giới hạn cho phép.")
+            
+    except Exception as e:
+        log(f"⚠️ Lỗi trong quá trình dọn dẹp: {e}")
+        
 # === TẠO VÀ UPLOAD FILE TỪ GEMINI ===
 log("📝 Đang chuẩn bị file upload...")
 
@@ -242,6 +284,23 @@ try:
         file_url = response_data.get("webUrl", "N/A")
         log(f"📎 File URL: {file_url}")
         
+except Exception as e:
+    log(f"⚠️ Upload lỗi: {e}")
+
+try:
+    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=100)
+    res.raise_for_status()
+    log(f"✅ Upload thành công! → Status: {res.status_code}")
+    
+    if res.status_code in [200, 201]:
+        response_data = res.json()
+        file_url = response_data.get("webUrl", "N/A")
+        log(f"📎 File URL: {file_url}")
+        
+    # === GỌI HÀM DỌN DẸP TẠI ĐÂY ===
+    cleanup_old_files(keep_count=5) 
+    # ===============================
+
 except Exception as e:
     log(f"⚠️ Upload lỗi: {e}")
 
