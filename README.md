@@ -66,18 +66,6 @@ python filesharepoint.py
 
 ---
 
-## Cấu trúc file .env mẫu
-
-### Cho các bước thủ công
-```env
-# Microsoft Azure & SharePoint
-TENANT_ID=
-CLIENT_ID=
-CLIENT_SECRET=
-SHAREPOINT_SITE_ID=
-SHAREPOINT_DRIVE_ID=
-```
-
 ### Cho script tự động (GitHub Actions/CI/CD)
 Nếu sử dụng script tự động, cần tạo các secrets sau:
 
