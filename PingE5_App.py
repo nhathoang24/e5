@@ -1,4 +1,4 @@
-import requests
+@import requests
 import os
 import random
 import time
@@ -185,6 +185,7 @@ recipients = [
     "phongse@h151147f.onmicrosoft.com",
     "phongsg@h151147f.onmicrosoft.com",
     "Fongsg@h151147f.onmicrosoft.com",
+    "hd3906427@gmail.com",
 ]
 
 # === Gửi mail ===
