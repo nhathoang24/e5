@@ -130,8 +130,29 @@ def get_gemini_content():
         "Viết một mẹo nhỏ hữu ích cho lập trình viên Python.",
         "Giải thích ngắn gọn khái niệm Cloud Computing bằng tiếng Việt.",
         "Viết một câu danh ngôn truyền cảm hứng cho người làm công nghệ.",
-        "Tóm tắt ngắn gọn lịch sử của Internet trong 3 câu."
+        "Tóm tắt ngắn gọn lịch sử của Internet trong 3 câu.",
+        "Mô tả ngắn gọn cách hoạt động của thuật toán sắp xếp nhanh (QuickSort).",
+        "Viết một đoạn văn 40–60 từ về một ứng dụng thú vị của trí tuệ nhân tạo trong đời sống.",
+        "Giải thích tại sao cấu trúc dữ liệu cây nhị phân lại quan trọng.",
+        "Viết một mẹo tối ưu hiệu suất cho lập trình viên JavaScript.",
+        "Trình bày ngắn gọn sự khác nhau giữa TCP và UDP.",
+        "Giải thích khái niệm 'REST API' bằng lời đơn giản.",
+        "Viết một câu động lực dành cho người đang học lập trình.",
+        "Tóm tắt lợi ích chính của việc sử dụng Git trong phát triển phần mềm.",
+        "Giải thích ngắn gọn kiến trúc microservices.",
+        "Viết một đoạn mô tả ngắn về tầm quan trọng của bảo mật thông tin.",
+        "Giải thích sự khác biệt giữa RAM và ROM cho người mới học.",
+        "Viết một ví dụ đơn giản về ứng dụng của học máy trong y tế.",
+        "Tóm tắt vai trò của hệ điều hành trong máy tính.",
+        "Mô tả ngắn gọn mô hình Client–Server.",
+        "Viết một mẹo giúp cải thiện chất lượng code trong bất kỳ ngôn ngữ lập trình nào.",
+        "Giải thích khái niệm Container (như Docker) bằng tiếng Việt.",
+        "Tóm tắt cách hoạt động của trình biên dịch (compiler).",
+        "Mô tả ngắn gọn kiến trúc mạng LAN.",
+        "Giải thích 'big data' bằng một đoạn 2–3 câu.",
+        "Viết một mô tả ngắn về blockchain và lý do nó được ứng dụng rộng rãi."
     ]
+
     selected_prompt = random.choice(prompts)
 
     payload = {
@@ -273,16 +294,6 @@ upload_headers = {
 }
 
 log(f"🚀 Upload file lên SharePoint: {filename}")
-
-try:
-    res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=100)
-    res.raise_for_status()
-    log(f"✅ Upload thành công! → Status: {res.status_code}")
-    
-    if res.status_code in [200, 201]:
-        response_data = res.json()
-        file_url = response_data.get("webUrl", "N/A")
-        log(f"📎 File URL: {file_url}")
         
 except Exception as e:
     log(f"⚠️ Upload lỗi: {e}")
