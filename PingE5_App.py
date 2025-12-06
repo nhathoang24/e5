@@ -295,9 +295,6 @@ upload_headers = {
 
 log(f"🚀 Upload file lên SharePoint: {filename}")
         
-except Exception as e:
-    log(f"⚠️ Upload lỗi: {e}")
-
 try:
     res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=100)
     res.raise_for_status()
