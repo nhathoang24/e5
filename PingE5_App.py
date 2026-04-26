@@ -15,10 +15,18 @@ except ImportError:
 # === Khởi tạo log lưu trữ ===
 log_messages = []
 
+# === Hệ thống theo dõi lỗi ===
+action_results = []  # Danh sách (tên hành động, thành công/thất bại, mô tả)
+
 def log(*args):
     msg = " ".join(str(arg) for arg in args)
     print(msg)
     log_messages.append(msg)
+
+def record_action(action_name, success, detail=""):
+    """Ghi nhận kết quả của một hành động."""
+    icon = "✅" if success else "❌"
+    action_results.append((icon, action_name, detail))
 
 # === Hàm gửi Telegram ===
 def send_telegram_message(msg):
@@ -89,10 +97,12 @@ try:
         raise ValueError("No access_token in response")
     
     log("✅ Access token lấy thành công")
+    record_action("Lấy Access Token Microsoft", True)
     
 except Exception as e:
     error_msg = f"❌ Lỗi lấy token: {e}"
     log(error_msg)
+    record_action("Lấy Access Token Microsoft", False, str(e))
     send_telegram_message(f"*Authentication Failed*\n`{error_msg}`")
     
     with open("error.txt", "w") as f:
@@ -110,16 +120,19 @@ def safe_get(url, label, timeout=100):
     try:
         res = requests.get(url, headers=headers, timeout=timeout)
         res.raise_for_status()
-        log(f"{label} → Status: {res.status_code}")
+        log(f"✅ {label} → Status: {res.status_code}")
+        record_action(label, True)
         return res
     except Exception as e:
-        log(f"⚠️ {label} → Lỗi: {e}")
+        log(f"❌ {label} → Lỗi: {e}")
+        record_action(label, False, str(e))
         return None
 
 # === Hàm lấy nội dung từ Gemini API ===
 def get_gemini_content():
     if not gemini_api_key:
         log("⚠️ Không tìm thấy GEMINI_API_KEY. Sử dụng nội dung mặc định.")
+        record_action("Gọi Gemini API", False, "Thiếu GEMINI_API_KEY")
         return None
 
     log("🤖 Đang nhờ Gemini viết nội dung...")
@@ -167,12 +180,15 @@ def get_gemini_content():
             result = response.json()
             text_content = result['candidates'][0]['content']['parts'][0]['text']
             log("✅ Gemini đã trả về nội dung.")
+            record_action("Gọi Gemini API", True)
             return text_content
         else:
-            log(f"⚠️ Lỗi Gemini API: {response.status_code}")
+            log(f"❌ Lỗi Gemini API: {response.status_code}")
+            record_action("Gọi Gemini API", False, f"HTTP {response.status_code}")
             return None
     except Exception as e:
-        log(f"⚠️ Lỗi khi gọi Gemini: {e}")
+        log(f"❌ Lỗi khi gọi Gemini: {e}")
+        record_action("Gọi Gemini API", False, str(e))
         return None
 
 # === Kiểm tra thông tin SharePoint ===
@@ -217,8 +233,10 @@ try:
     )
     res.raise_for_status()
     log(f"✅ Email sent → Status: {res.status_code}")
+    record_action("Gửi Email Activity", True)
 except Exception as e:
-    log(f"⚠️ Gửi mail lỗi: {e}")
+    log(f"❌ Gửi mail lỗi: {e}")
+    record_action("Gửi Email Activity", False, str(e))
 
 # === Ping các API Microsoft ===
 log("🔄 Ping các dịch vụ Microsoft Graph...")
@@ -238,16 +256,14 @@ def cleanup_old_files(keep_count=5):
         items = res.json().get('value', [])
         
         # 2. Lọc ra các file do bot tạo (có tiền tố gemini_log_)
-        # Lưu ý: Lọc để tránh xóa nhầm file quan trọng khác của bạn
         log_files = [f for f in items if f.get('name', '').startswith('gemini_log_')]
         
         # 3. Sắp xếp theo thời gian tạo (Mới nhất đứng đầu)
-        # API trả về createdDateTime dạng chuỗi ISO, có thể sort trực tiếp
         log_files.sort(key=lambda x: x['createdDateTime'], reverse=True)
         
         # 4. Kiểm tra số lượng
         if len(log_files) > keep_count:
-            files_to_delete = log_files[keep_count:] # Lấy danh sách file dư thừa
+            files_to_delete = log_files[keep_count:]
             log(f"⚠️ Tìm thấy {len(log_files)} file log. Sẽ xóa {len(files_to_delete)} file cũ...")
             
             for file in files_to_delete:
@@ -259,15 +275,20 @@ def cleanup_old_files(keep_count=5):
                     del_res = requests.delete(delete_url, headers=headers, timeout=60)
                     if del_res.status_code == 204:
                         log(f"🗑️ Đã xóa: {file_name}")
+                        record_action(f"Xóa file cũ: {file_name}", True)
                     else:
                         log(f"❌ Xóa thất bại {file_name}: {del_res.status_code}")
+                        record_action(f"Xóa file cũ: {file_name}", False, f"HTTP {del_res.status_code}")
                 except Exception as e:
                     log(f"❌ Lỗi khi xóa {file_name}: {e}")
+                    record_action(f"Xóa file cũ: {file_name}", False, str(e))
         else:
             log(f"✅ Số lượng file ({len(log_files)}) vẫn trong giới hạn cho phép.")
+            record_action("Dọn dẹp file cũ", True, f"{len(log_files)} file, không cần xóa")
             
     except Exception as e:
-        log(f"⚠️ Lỗi trong quá trình dọn dẹp: {e}")
+        log(f"❌ Lỗi trong quá trình dọn dẹp: {e}")
+        record_action("Dọn dẹp file cũ", False, str(e))
         
 # === TẠO VÀ UPLOAD FILE TỪ GEMINI ===
 log("📝 Đang chuẩn bị file upload...")
@@ -300,6 +321,7 @@ try:
     res = requests.put(upload_url, headers=upload_headers, data=file_content.encode('utf-8-sig'), timeout=100)
     res.raise_for_status()
     log(f"✅ Upload thành công! → Status: {res.status_code}")
+    record_action("Upload file SharePoint", True, filename)
     
     if res.status_code in [200, 201]:
         response_data = res.json()
@@ -311,12 +333,45 @@ try:
     # ===============================
 
 except Exception as e:
-    log(f"⚠️ Upload lỗi: {e}")
+    log(f"❌ Upload lỗi: {e}")
+    record_action("Upload file SharePoint", False, str(e))
 
 # === Hoàn tất ===
 log("✅ Hoàn thành ping E5!")
 
-# === Gửi log về Telegram ===
+# === Tạo bảng tóm tắt kết quả hành động ===
+total = len(action_results)
+failed_actions = [(icon, name, detail) for icon, name, detail in action_results if icon == "❌"]
+success_count = total - len(failed_actions)
+
+summary_lines = [f"*📋 Báo cáo E5 Ping — {current_date}*", ""]
+summary_lines.append(f"✅ Thành công: {success_count}/{total}")
+if failed_actions:
+    summary_lines.append(f"❌ Lỗi: {len(failed_actions)}/{total}")
+summary_lines.append("")
+
+summary_lines.append("*Chi tiết hành động:*")
+for icon, name, detail in action_results:
+    line = f"{icon} {name}"
+    if detail and icon == "❌":
+        # Giới hạn độ dài lỗi để tránh quá dài
+        short_detail = detail[:80] + "..." if len(detail) > 80 else detail
+        line += f"\n    ↳ `{short_detail}`"
+    summary_lines.append(line)
+
+if failed_actions:
+    summary_lines.append("")
+    summary_lines.append("⚠️ *Có lỗi xảy ra, vui lòng kiểm tra lại!*")
+else:
+    summary_lines.append("")
+    summary_lines.append("🎉 Tất cả hành động hoàn thành thành công!")
+
+summary_msg = "\n".join(summary_lines)
+
+# === Gửi bảng tóm tắt về Telegram ===
+send_telegram_message(summary_msg)
+
+# === Gửi log đầy đủ về Telegram (nếu cần debug) ===
 log_text = "\n".join(log_messages)
 max_length = 4000
 for i in range(0, len(log_text), max_length):
