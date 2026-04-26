@@ -75,7 +75,7 @@ tenant_id = os.getenv("TENANT_ID")
 user_email = os.getenv("USER_EMAIL")
 sharepoint_site_id = os.getenv("SHAREPOINT_SITE_ID")
 sharepoint_drive_id = os.getenv("SHAREPOINT_DRIVE_ID")
-gemini_api_key = os.getenv("GEMINI_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY")
 
 # === Lấy access token Microsoft ===
 log("🔐 Đang lấy access_token Microsoft...")
@@ -128,16 +128,16 @@ def safe_get(url, label, timeout=100):
         record_action(label, False, str(e))
         return None
 
-# === Hàm lấy nội dung từ Gemini API ===
-def get_gemini_content():
-    if not gemini_api_key:
-        log("⚠️ Không tìm thấy GEMINI_API_KEY. Sử dụng nội dung mặc định.")
-        record_action("Gọi Gemini API", False, "Thiếu GEMINI_API_KEY")
+# === Hàm lấy nội dung từ Groq API ===
+def get_groq_content():
+    if not groq_api_key:
+        log("⚠️ Không tìm thấy GROQ_API_KEY. Sử dụng nội dung mặc định.")
+        record_action("Gọi Groq API", False, "Thiếu GROQ_API_KEY")
         return None
 
-    log("🤖 Đang nhờ Gemini viết nội dung...")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key={gemini_api_key}"
-    
+    log("🤖 Đang nhờ Groq viết nội dung...")
+    url = "https://api.groq.com/openai/v1/responses"
+
     prompts = [
         "Viết một đoạn văn ngắn (khoảng 50 từ) về một sự thật thú vị trong khoa học máy tính.",
         "Viết một mẹo nhỏ hữu ích cho lập trình viên Python.",
@@ -169,26 +169,31 @@ def get_gemini_content():
     selected_prompt = random.choice(prompts)
 
     payload = {
-        "contents": [{
-            "parts": [{"text": selected_prompt}]
-        }]
+        "model": "qwen/qwen3-32b",
+        "input": selected_prompt
+    }
+
+    req_headers = {
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json"
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=100)
+        response = requests.post(url, json=payload, headers=req_headers, timeout=100)
         if response.status_code == 200:
             result = response.json()
-            text_content = result['candidates'][0]['content']['parts'][0]['text']
-            log("✅ Gemini đã trả về nội dung.")
-            record_action("Gọi Gemini API", True)
+            # Groq Responses API: output[0].content[0].text
+            text_content = result["output"][0]["content"][0]["text"]
+            log("✅ Groq đã trả về nội dung.")
+            record_action("Gọi Groq API", True)
             return text_content
         else:
-            log(f"❌ Lỗi Gemini API: {response.status_code}")
-            record_action("Gọi Gemini API", False, f"HTTP {response.status_code}")
+            log(f"❌ Lỗi Groq API: {response.status_code} — {response.text}")
+            record_action("Gọi Groq API", False, f"HTTP {response.status_code}")
             return None
     except Exception as e:
-        log(f"❌ Lỗi khi gọi Gemini: {e}")
-        record_action("Gọi Gemini API", False, str(e))
+        log(f"❌ Lỗi khi gọi Groq: {e}")
+        record_action("Gọi Groq API", False, str(e))
         return None
 
 # === Kiểm tra thông tin SharePoint ===
@@ -290,20 +295,20 @@ def cleanup_old_files(keep_count=5):
         log(f"❌ Lỗi trong quá trình dọn dẹp: {e}")
         record_action("Dọn dẹp file cũ", False, str(e))
         
-# === TẠO VÀ UPLOAD FILE TỪ GEMINI ===
+# === TẠO VÀ UPLOAD FILE TỪ GROQ ===
 log("📝 Đang chuẩn bị file upload...")
 
-gemini_text = get_gemini_content()
+groq_text = get_groq_content()
 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-if gemini_text:
-    file_content = f"--- AUTOMATED CONTENT BY GEMINI ---\nTime: {timestamp}\n\n{gemini_text}\n\n-----------------------------------"
+if groq_text:
+    file_content = f"--- AUTOMATED CONTENT BY GROQ ---\nTime: {timestamp}\n\n{groq_text}\n\n-----------------------------------"
 else:
-    log("⚠️ Dùng nội dung fallback do Gemini lỗi/thiếu key.")
+    log("⚠️ Dùng nội dung fallback do Groq lỗi/thiếu key.")
     random_id = random.randint(100000, 999999)
     file_content = f"Auto-generated file for E5 Keep Active.\nTime: {timestamp}\nRandom ID: {random_id}"
 
-filename = f"gemini_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+filename = f"groq_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 
 upload_url = (
     f"https://graph.microsoft.com/v1.0/sites/{sharepoint_site_id}/drives/{sharepoint_drive_id}"
