@@ -148,7 +148,7 @@ def get_groq_content():
     )
 
     payload = {
-        "model": "openai/gpt-oss-20b",
+        "model": "openai/gpt-oss-120b",
         "input": selected_prompt
     }
 
