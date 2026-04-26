@@ -136,7 +136,7 @@ def get_gemini_content():
         return None
 
     log("🤖 Đang nhờ Gemini viết nội dung...")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key={gemini_api_key}"
     
     prompts = [
         "Viết một đoạn văn ngắn (khoảng 50 từ) về một sự thật thú vị trong khoa học máy tính.",
