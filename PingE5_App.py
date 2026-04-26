@@ -148,7 +148,7 @@ def get_groq_content():
     )
 
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-20b",
         "input": selected_prompt
     }
 
