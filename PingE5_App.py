@@ -138,35 +138,14 @@ def get_groq_content():
     log("🤖 Đang nhờ Groq viết nội dung...")
     url = "https://api.groq.com/openai/v1/responses"
 
-    prompts = [
-        "Viết một đoạn văn ngắn (khoảng 50 từ) về một sự thật thú vị trong khoa học máy tính.",
-        "Viết một mẹo nhỏ hữu ích cho lập trình viên Python.",
-        "Giải thích ngắn gọn khái niệm Cloud Computing bằng tiếng Việt.",
-        "Viết một câu danh ngôn truyền cảm hứng cho người làm công nghệ.",
-        "Tóm tắt ngắn gọn lịch sử của Internet trong 3 câu.",
-        "Mô tả ngắn gọn cách hoạt động của thuật toán sắp xếp nhanh (QuickSort).",
-        "Viết một đoạn văn 40–60 từ về một ứng dụng thú vị của trí tuệ nhân tạo trong đời sống.",
-        "Giải thích tại sao cấu trúc dữ liệu cây nhị phân lại quan trọng.",
-        "Viết một mẹo tối ưu hiệu suất cho lập trình viên JavaScript.",
-        "Trình bày ngắn gọn sự khác nhau giữa TCP và UDP.",
-        "Giải thích khái niệm 'REST API' bằng lời đơn giản.",
-        "Viết một câu động lực dành cho người đang học lập trình.",
-        "Tóm tắt lợi ích chính của việc sử dụng Git trong phát triển phần mềm.",
-        "Giải thích ngắn gọn kiến trúc microservices.",
-        "Viết một đoạn mô tả ngắn về tầm quan trọng của bảo mật thông tin.",
-        "Giải thích sự khác biệt giữa RAM và ROM cho người mới học.",
-        "Viết một ví dụ đơn giản về ứng dụng của học máy trong y tế.",
-        "Tóm tắt vai trò của hệ điều hành trong máy tính.",
-        "Mô tả ngắn gọn mô hình Client–Server.",
-        "Viết một mẹo giúp cải thiện chất lượng code trong bất kỳ ngôn ngữ lập trình nào.",
-        "Giải thích khái niệm Container (như Docker) bằng tiếng Việt.",
-        "Tóm tắt cách hoạt động của trình biên dịch (compiler).",
-        "Mô tả ngắn gọn kiến trúc mạng LAN.",
-        "Giải thích 'big data' bằng một đoạn 2–3 câu.",
-        "Viết một mô tả ngắn về blockchain và lý do nó được ứng dụng rộng rãi."
-    ]
-
-    selected_prompt = random.choice(prompts)
+    # Meta-prompt: để Groq tự chọn chủ đề mỗi lần chạy
+    run_time = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+    selected_prompt = (
+        f"Bây giờ là {run_time}. Hãy tự nghĩ ra một chủ đề ngẫu nhiên, độc đáo về công nghệ, lập trình, "
+        "khoa học máy tính hoặc kỹ thuật số (không được lặp lại các chủ đề quá phổ biến), "
+        "rồi viết một đoạn văn ngắn 50–80 từ bằng tiếng Việt về chủ đề đó. "
+        "Chỉ đưa ra nội dung văn xuôi, không giải thích hay đặt tiêu đề."
+    )
 
     payload = {
         "model": "qwen/qwen3-32b",
