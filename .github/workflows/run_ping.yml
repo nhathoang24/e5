@@ -2,6 +2,9 @@
 name: Ping E5 Application
 
 on:
+  push:
+    branches:
+      - '**'   # Chạy khi push lên bất kỳ nhánh nào
   schedule:
     - cron: '0 3 * * *'
     - cron: '0 15 * * *'
