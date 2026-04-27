@@ -2,7 +2,7 @@
 
 Bot tự động thực hiện các tác vụ trên Microsoft Graph API (gửi email, ping SharePoint, upload file...) để duy trì hoạt động tài khoản **Microsoft 365 E5 Developer**, tránh bị thu hồi do không sử dụng.
 
-Thông báo trạng thái được gửi về **Telegram**. Nội dung file log được tạo bởi **Google Gemini AI**.
+Thông báo trạng thái được gửi về **Telegram**. Nội dung file log được tạo bởi **Groq AI**.
 
 ---
 
@@ -16,7 +16,7 @@ Thông báo trạng thái được gửi về **Telegram**. Nội dung file log 
 | `USER_EMAIL` | Email tài khoản E5 | Email đăng ký E5 của bạn |
 | `SHAREPOINT_SITE_ID` | ID của SharePoint Site | Graph Explorer hoặc script |
 | `SHAREPOINT_DRIVE_ID` | ID của Drive trong SharePoint | Graph Explorer hoặc script |
-| `GEMINI_API_KEY` | API key của Google Gemini AI | Google AI Studio |
+| `GROQ_API_KEY` | API key của Groq AI | Groq Console |
 | `TELEGRAM_BOT_TOKEN` | Token của Telegram Bot | @BotFather trên Telegram |
 | `TELEGRAM_CHAT_ID` | ID chat để nhận thông báo | @userinfobot trên Telegram |
 
@@ -99,18 +99,18 @@ Thông báo trạng thái được gửi về **Telegram**. Nội dung file log 
 
 ---
 
-## 🟡 Phần 2: Cấu hình Google Gemini AI
+## 🟡 Phần 2: Cấu hình Groq AI
 
-Bot dùng Gemini để tạo nội dung ngẫu nhiên cho file log upload lên SharePoint.
+Bot dùng Groq API để tạo nội dung ngẫu nhiên cho file log upload lên SharePoint.
 
-### Lấy GEMINI_API_KEY
+### Lấy GROQ_API_KEY
 
-1. Truy cập [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Đăng nhập bằng tài khoản Google.
-3. Nhấn **Create API key** → chọn project (hoặc tạo mới).
-4. Sao chép API key được tạo ra → đây là `GEMINI_API_KEY`.
+1. Truy cập [Groq Console](https://console.groq.com/keys).
+2. Đăng nhập hoặc tạo tài khoản Groq.
+3. Nhấn **Create API key**.
+4. Sao chép API key được tạo ra → đây là `GROQ_API_KEY`.
 
-> 💡 Nếu không cấu hình `GEMINI_API_KEY`, bot vẫn chạy bình thường nhưng file log sẽ dùng nội dung mặc định thay vì do AI tạo ra.
+> 💡 Nếu không cấu hình `GROQ_API_KEY`, bot vẫn chạy bình thường nhưng file log sẽ dùng nội dung mặc định thay vì do AI tạo ra.
 
 ---
 
@@ -162,8 +162,8 @@ USER_EMAIL=          # Email tài khoản E5, ví dụ: user@domain.onmicrosoft.
 SHAREPOINT_SITE_ID=  # ID của SharePoint site
 SHAREPOINT_DRIVE_ID= # ID của Drive trong SharePoint
 
-# Google Gemini AI (tuỳ chọn)
-GEMINI_API_KEY=      # API key từ Google AI Studio
+# Groq AI (tuỳ chọn)
+GROQ_API_KEY=        # API key từ Groq Console
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=  # Token từ @BotFather
