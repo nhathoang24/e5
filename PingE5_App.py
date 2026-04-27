@@ -239,8 +239,8 @@ def cleanup_old_files(keep_count=5):
         
         items = res.json().get('value', [])
         
-        # 2. Lọc ra các file do bot tạo (có tiền tố gemini_log_)
-        log_files = [f for f in items if f.get('name', '').startswith('gemini_log_')]
+        # 2. Lọc ra các file do bot tạo (có tiền tố groq_log_)
+        log_files = [f for f in items if f.get('name', '').startswith('groq_log_')]
         
         # 3. Sắp xếp theo thời gian tạo (Mới nhất đứng đầu)
         log_files.sort(key=lambda x: x['createdDateTime'], reverse=True)
