@@ -6,8 +6,8 @@ on:
     branches:
       - '**'   # Chạy khi push lên bất kỳ nhánh nào
   schedule:
-    - cron: '0 3 * * *'
-    - cron: '0 15 * * *'
+    - cron: '0 0 * * *'
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
